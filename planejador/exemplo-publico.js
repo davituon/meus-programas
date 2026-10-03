@@ -39,10 +39,10 @@ window.PLANO_EXEMPLO = {
     { nome: "Internet / Telefone", valor: 150, ate: "" },
     { nome: "Celulares (linhas)", valor: 120, ate: "" },
     { nome: "Academia", valor: 90, ate: "" },
-    { nome: "Consórcio 1", valor: 500, ate: "2041-02", reaj: 5, cota: { carta: 100000, pago: 0, contemplacao: "" } },
-    { nome: "Consórcio 2", valor: 400, ate: "2041-02", reaj: 5, cota: { carta: 80000, pago: 0, contemplacao: "" } },
-    { nome: "Consórcio 3", valor: 300, ate: "2038-06", reaj: 5, cota: { carta: 60000, pago: 0, contemplacao: "" } },
-    { nome: "Consórcio 4", valor: 250, ate: "2038-06", reaj: 5, cota: { carta: 50000, pago: 0, contemplacao: "" } },
+    { nome: "Consórcio 1", valor: 500, ate: "2041-02", reaj: 5, cota: { carta: 100000, pago: 0, contemplacao: "", custos: 0 } },
+    { nome: "Consórcio 2", valor: 400, ate: "2041-02", reaj: 5, cota: { carta: 80000, pago: 0, contemplacao: "", custos: 0 } },
+    { nome: "Consórcio 3", valor: 300, ate: "2038-06", reaj: 5, cota: { carta: 60000, pago: 0, contemplacao: "", custos: 0 } },
+    { nome: "Consórcio 4", valor: 250, ate: "2038-06", reaj: 5, cota: { carta: 50000, pago: 0, contemplacao: "", custos: 0 } },
     { nome: "Seguro do Carro", valor: 150, ate: "", reaj: 5 },
     { nome: "IPVA (parcela)", valor: 250, ate: "2050-03", reaj: 5 },
     { nome: "Combustível", valor: 400, ate: "" },
@@ -62,7 +62,7 @@ window.PLANO_EXEMPLO = {
     xp: { saldo: 10000, retorno: 10 },
     prev: { saldo: 5000, retorno: 10, empresa: 0 }
   },
-  aposentadoria: { idade: 40, aposentar: 62, inss_idade: 65, ate_idade: 90, gasto: 5000, inss: 3500, retorno: 5, consorcios: true },
+  aposentadoria: { idade: 40, aposentar: 62, inss_idade: 65, ate_idade: 90, gasto: 5000, inss: 3500, retorno: 5, consorcios: true, imposto: 0, custo: 0, var_cenarios: 2 },
   patrimonio: {
     bens: [
       { nome: "Imóvel", tipo: "imovel", valor: 150000 },

@@ -171,6 +171,11 @@
       var campos = el("div", { className: "campos" });
       campos.appendChild(campoValor("Carta de crédito", d.cota.carta, function (v) { d.cota.carta = v; }));
       campos.appendChild(campoValor("Já pago antes de " + P.rotuloInicio(), d.cota.pago, function (v) { d.cota.pago = v; }));
+      var custos = campoNumero({ passo: "0.5", valor: P.custosDaCota(d.cota), sufixo: "%", rotulo: "Custos dentro da parcela de " + d.nome });
+      custos.campo.min = "0"; custos.campo.max = "60";
+      custos.campo.title = "Parte de cada parcela que não é fundo comum (taxa de administração, fundo de reserva, seguro) e não volta. Veja no extrato do consórcio. 0 = contar tudo que foi pago.";
+      custos.campo.addEventListener("input", function () { var v = parseFloat(custos.campo.value); d.cota.custos = isFinite(v) ? Math.max(0, Math.min(60, v)) : 0; salvar(); atualizar(); });
+      campos.appendChild(campoRotulado("Custos dentro da parcela", custos));
       var contemp = el("input", { type: "text", className: "mini", value: formatarAte(d.cota.contemplacao), placeholder: "mm/aaaa", maxLength: 7, title: "Mês da contemplação (ex.: 06/2030). Vazio = ainda sem previsão." });
       contemp.setAttribute("aria-label", "Contemplação de " + d.nome);
       contemp.addEventListener("change", function () {
@@ -185,7 +190,7 @@
       bloco.appendChild(campos);
 
       var numeros = el("div", { className: "cota-numeros" });
-      [["ate", "Pago até a contemplação"], ["total", "Pago no total"], ["pct", "Da carta já paga"]].forEach(function (n) {
+      [["ate", "Pago até a contemplação"], ["fundo", "Dele, fundo comum"], ["total", "Pago no total"], ["pct", "Da carta já paga"]].forEach(function (n) {
         var cx = el("div");
         cx.append(el("span", { textContent: n[1] }), el("strong", { id: "cota-" + n[0] + "-" + i }));
         numeros.appendChild(cx);
@@ -219,6 +224,7 @@
       texto("cota-info-" + i, nota);
       texto("cota-ate-" + i, moeda(ate));
       texto("cota-total-" + i, moeda(total));
+      texto("cota-fundo-" + i, moeda(ate * (1 - P.custosDaCota(d.cota) / 100)));
       texto("cota-pct-" + i, pct === null ? "–" : Math.round(pct * 100) + "%");
       var barra = document.getElementById("cota-barra-" + i);
       barra.style.width = (pct === null ? 0 : Math.min(100, pct * 100)) + "%";
@@ -285,7 +291,7 @@
   document.getElementById("btn-nova-cota").addEventListener("click", function () {
     var item = dados.despesas[Number(document.getElementById("sel-nova-cota").value)];
     if (!item) return;
-    item.cota = { carta: 0, pago: 0, contemplacao: "" };
+    item.cota = { carta: 0, pago: 0, contemplacao: "", custos: 0 };
     salvar();
     desenhar();
   });

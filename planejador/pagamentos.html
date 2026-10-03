@@ -16,16 +16,25 @@
       <div>
         <h1>Planejador financeiro</h1>
         <nav class="paginas" aria-label="Páginas">
-          <a href="inicio.html">Início</a>
-          <a href="index.html">Orçamento</a>
-          <a href="aportes.html">Aportes e consórcios</a>
-          <a href="carteira.html">Carteira</a>
-          <a href="cartao.html">Cartão de crédito</a>
-          <a href="patrimonio.html">Patrimônio</a>
-          <a href="aposentadoria.html">Aposentadoria</a>
-          <a href="conferencia.html">Conferência</a>
-          <a href="oportunidades.html">Oportunidades</a>
-          <a href="pagamentos.html" aria-current="page">Pagamentos</a>
+          <div class="grupo-menu" role="group" aria-label="Dia a dia">
+            <span class="grupo-rotulo" aria-hidden="true">Dia a dia</span>
+            <a href="inicio.html">Início</a>
+            <a href="index.html">Orçamento</a>
+            <a href="cartao.html">Cartão de crédito</a>
+            <a href="pagamentos.html" aria-current="page">Pagamentos</a>
+          </div>
+          <div class="grupo-menu" role="group" aria-label="Planejar">
+            <span class="grupo-rotulo" aria-hidden="true">Planejar</span>
+            <a href="aportes.html">Aportes e consórcios</a>
+            <a href="carteira.html">Carteira</a>
+            <a href="patrimonio.html">Patrimônio</a>
+            <a href="aposentadoria.html">Aposentadoria</a>
+          </div>
+          <div class="grupo-menu" role="group" aria-label="Revisar">
+            <span class="grupo-rotulo" aria-hidden="true">Revisar</span>
+            <a href="conferencia.html">Conferência</a>
+            <a href="oportunidades.html">Oportunidades</a>
+          </div>
         </nav>
       </div>
       <div class="topo-acoes">
@@ -68,7 +77,7 @@
         <h2 id="t-contas">Contas do mês</h2>
         <button type="button" id="marcar-todas" class="botao-sec">Marcar todas como pagas hoje</button>
       </div>
-      <p class="nota">Informe o dia de vencimento de cada conta para ver o que está atrasado ou vence nos próximos 7 dias. Marque cada conta quando pagar e ajuste a data se o pagamento foi em outro dia. Os pagamentos ficam salvos por mês, entram no backup e podem ser desfeitos a qualquer momento. As despesas e as faturas vêm do Orçamento e da página Cartão de crédito. Se você renomear uma despesa, ela volta a aparecer como pendente.</p>
+      <p class="nota">Informe o dia de vencimento de cada conta para ver o que está atrasado ou vence nos próximos 7 dias. Marque cada conta quando pagar e ajuste a data se o pagamento foi em outro dia. Se pagou um valor diferente do previsto, informe o valor realmente pago. Os pagamentos ficam salvos por mês, entram no backup e podem ser desfeitos a qualquer momento. As despesas e as faturas vêm do Orçamento e da página Cartão de crédito. Se você renomear uma despesa, ela volta a aparecer como pendente.</p>
       <p id="pg-aviso" class="pg-aviso" role="status" hidden></p>
       <div class="pg-filtros" role="group" aria-label="Filtrar contas">
         <button type="button" data-filtro="todas" aria-pressed="true">Todas</button>
@@ -77,6 +86,17 @@
       </div>
       <div class="pg-barra" aria-hidden="true"><span id="pg-barra-pago"></span></div>
       <ul id="contas" class="pg-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-hist">
+      <div class="cartao-topo"><h2 id="t-hist">Orçado × realizado, mês a mês</h2><span class="dica">Até o mês analisado · últimos 12 meses</span></div>
+      <p class="nota">"Previsto" é tudo o que vence no mês. "Pago" é o que você marcou como pago, com o valor realmente pago (quando você informa um valor diferente). "Desvio" compara o realmente pago com o previsto só das contas pagas: valores positivos são gasto acima do previsto.</p>
+      <div class="tabela-rolagem">
+        <table class="mi-hist tabela tabela-simples">
+          <thead><tr><th scope="col">Mês</th><th scope="col">Previsto</th><th scope="col">Pago</th><th scope="col">Desvio</th><th scope="col">Pendente</th><th scope="col">Contas pagas</th></tr></thead>
+          <tbody id="historico"></tbody>
+        </table>
+      </div>
     </section>
 
     <p class="aviso">Controle de organização pessoal: não consulta bancos nem confirma pagamentos reais.</p>

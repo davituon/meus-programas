@@ -33,6 +33,84 @@
     document.getElementById("caixa-atencao").className = "kpi resultado " + (conf.resumo.atencao > 0 ? "negativo" : "positivo");
   }
 
+  // ------------------------------------------------------------ primeiros passos
+  var NOMES_PAGINA = { "index.html": "Orçamento", "aportes.html": "Aportes", "carteira.html": "Carteira", "cartao.html": "Cartão de crédito", "patrimonio.html": "Patrimônio", "aposentadoria.html": "Aposentadoria" };
+
+  function passos() {
+    var a = resumo.conferencia.areas, pend = a.lista.filter(function (x) { return !x.feita; }), atrasado = P.backupAtrasado();
+    var bloco = document.getElementById("bloco-passos");
+    bloco.hidden = !pend.length && !atrasado;
+    if (bloco.hidden) return;
+    texto("passos-progresso", a.feitas + " de " + a.total + " áreas preenchidas");
+    document.getElementById("passos-barra-preenche").style.width = Math.round(a.feitas / a.total * 100) + "%";
+    document.getElementById("passos-barra").setAttribute("aria-label", a.feitas + " de " + a.total + " áreas preenchidas");
+    var ul = limpar("passos");
+    pend.slice(0, 5).forEach(function (x) {
+      var li = el("li", { className: "passo" });
+      li.appendChild(el("span", { className: "passo-marca", textContent: "○" }));
+      var corpo = el("span", { className: "passo-nome" });
+      corpo.appendChild(el("strong", { textContent: x.nome }));
+      corpo.appendChild(el("small", { textContent: " · " + (NOMES_PAGINA[x.pagina] || "") }));
+      li.appendChild(corpo);
+      li.appendChild(el("a", { href: x.pagina, className: "conf-ir", textContent: "Preencher →" }));
+      var ok = el("button", { type: "button", className: "secundario", textContent: "Já está certo" });
+      ok.setAttribute("aria-label", "Marcar " + x.nome + " como já está certo");
+      ok.addEventListener("click", function () { P.conferencia.conferir(x.nome, true); desenhar(); });
+      li.appendChild(ok);
+      ul.appendChild(li);
+    });
+    if (pend.length > 5) ul.appendChild(el("li", { className: "passo-mais", textContent: "E mais " + (pend.length - 5) + " áreas na página Conferência." }));
+    if (atrasado) {
+      var li2 = el("li", { className: "passo" });
+      li2.appendChild(el("span", { className: "passo-marca", textContent: "!" }));
+      var c2 = el("span", { className: "passo-nome" });
+      c2.appendChild(el("strong", { textContent: "Baixar um backup" }));
+      c2.appendChild(el("small", { textContent: " · nenhum backup recente: os dados ficam só neste navegador" }));
+      li2.appendChild(c2);
+      var b2 = el("button", { type: "button", textContent: "Abrir o backup" });
+      b2.addEventListener("click", function () { var botao = document.getElementById("btn-backup"); if (botao) botao.click(); });
+      li2.appendChild(b2);
+      ul.appendChild(li2);
+    }
+  }
+
+  // ------------------------------------------------------------ saúde financeira
+  var ROTULO_NIVEL = { bom: "✓ Bom", atencao: "! Atenção", alerta: "⚠ Alerta", sem: "– Sem dados", info: "i Informação" };
+
+  function cartaoSaude(titulo, valor, nivel, texto) {
+    var c = el("article", { className: "saude-item nivel-" + nivel });
+    var topo = el("div", { className: "saude-topo" });
+    topo.appendChild(el("span", { className: "saude-titulo", textContent: titulo }));
+    topo.appendChild(el("span", { className: "saude-nivel", textContent: ROTULO_NIVEL[nivel] }));
+    c.appendChild(topo);
+    c.appendChild(el("strong", { textContent: valor }));
+    c.appendChild(el("p", { textContent: texto }));
+    return c;
+  }
+  function pct(v) { return Math.round(v * 100) + "%"; }
+  function mesesTxt(v) { return (Math.round(v * 10) / 10).toString().replace(".", ",") + (Math.round(v * 10) / 10 === 1 ? " mês" : " meses"); }
+
+  function saude() {
+    var i = P.indicadores.calcular(), caixa = limpar("saude"), p = i.poupanca, r = i.reserva, c = i.comprometimento, l = i.liquidez;
+
+    caixa.appendChild(cartaoSaude("Quanto você poupa", p.valor === null ? "–" : pct(p.valor), p.nivel,
+      p.valor === null ? "Cadastre as receitas para calcular." :
+      p.valor < 0 ? "O orçamento gasta mais do que entra: em média faltam " + moeda(Math.abs(p.porMes)) + " por mês. Veja a página Oportunidades." :
+      "Cerca de " + moeda(p.porMes) + " por mês viram patrimônio (reservas no aporte, sobra e previdência da folha). Referência: " + pct(P.indicadores.BOA_POUPANCA) + " ou mais da renda."));
+
+    caixa.appendChild(cartaoSaude("Reserva de emergência", r.meses === null ? "–" : mesesTxt(r.meses), r.nivel,
+      r.meses === null ? "Cadastre as despesas para calcular." :
+      "Dinheiro na corretora (" + moeda(r.liquido) + ") ÷ despesas de " + moeda(r.despesaMensal) + " por mês. Meta: " + P.indicadores.META_RESERVA_MESES + " meses" + (r.falta > 0 ? "; faltam " + moeda(r.falta) + ". Conta toda a corretora como dinheiro disponível." : ". Meta atingida.")));
+
+    caixa.appendChild(cartaoSaude("Parcelas fixas na renda", c.valor === null ? "–" : pct(c.valor), c.nivel,
+      c.valor === null ? "Sem receita líquida para comparar." :
+      "Consórcios (" + moeda(c.consorcioMensal) + ") e parcelas do cartão (" + moeda(c.parceladoMensal) + ") por mês, sobre " + moeda(c.receitaLiquidaMensal) + " de receita líquida. Referência: até " + pct(P.indicadores.BOM_COMPROMETIMENTO) + "."));
+
+    caixa.appendChild(cartaoSaude("Patrimônio em dinheiro", l.pctLiquido === null ? "–" : pct(l.pctLiquido), l.pctLiquido === null ? "sem" : "info",
+      l.pctLiquido === null ? "Sem patrimônio cadastrado." :
+      "Disponível: " + moeda(l.liquido) + ". Preso: " + moeda(l.travado) + " (previdência " + moeda(l.prev) + ", bens " + moeda(l.bens) + ", consórcios pagos " + moeda(l.consorcio) + ")."));
+  }
+
   // ------------------------------------------------------------ meses do ano
   function desenharMeses() {
     var caixa = limpar("meses"), dados = [], max = 0, k;
@@ -158,7 +236,7 @@
   function desenhar() {
     P.desenharCabecalho();
     resumo = { base: P.oportunidades.medir(), oportunidades: P.oportunidades.analisar(), conferencia: P.conferencia.verificar() };
-    quadros(); desenharMeses(); simular(); oportunidades(); atencao(); atalhos();
+    quadros(); passos(); saude(); desenharMeses(); simular(); oportunidades(); atencao(); atalhos();
   }
 
   document.getElementById("ano-ant").addEventListener("click", function () { sel.ano--; desenharMeses(); });

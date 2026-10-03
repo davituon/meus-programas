@@ -16,16 +16,25 @@
       <div>
         <h1>Planejador financeiro</h1>
         <nav class="paginas" aria-label="Páginas">
-          <a href="inicio.html">Início</a>
-          <a href="index.html">Orçamento</a>
-          <a href="aportes.html">Aportes e consórcios</a>
-          <a href="carteira.html">Carteira</a>
-          <a href="cartao.html">Cartão de crédito</a>
-          <a href="patrimonio.html">Patrimônio</a>
-          <a href="aposentadoria.html" aria-current="page">Aposentadoria</a>
-          <a href="conferencia.html">Conferência</a>
-          <a href="oportunidades.html">Oportunidades</a>
-          <a href="pagamentos.html">Pagamentos</a>
+          <div class="grupo-menu" role="group" aria-label="Dia a dia">
+            <span class="grupo-rotulo" aria-hidden="true">Dia a dia</span>
+            <a href="inicio.html">Início</a>
+            <a href="index.html">Orçamento</a>
+            <a href="cartao.html">Cartão de crédito</a>
+            <a href="pagamentos.html">Pagamentos</a>
+          </div>
+          <div class="grupo-menu" role="group" aria-label="Planejar">
+            <span class="grupo-rotulo" aria-hidden="true">Planejar</span>
+            <a href="aportes.html">Aportes e consórcios</a>
+            <a href="carteira.html">Carteira</a>
+            <a href="patrimonio.html">Patrimônio</a>
+            <a href="aposentadoria.html" aria-current="page">Aposentadoria</a>
+          </div>
+          <div class="grupo-menu" role="group" aria-label="Revisar">
+            <span class="grupo-rotulo" aria-hidden="true">Revisar</span>
+            <a href="conferencia.html">Conferência</a>
+            <a href="oportunidades.html">Oportunidades</a>
+          </div>
         </nav>
       </div>
       <div class="topo-acoes">
@@ -66,6 +75,7 @@
         <p id="texto-veredito" class="lead"></p>
         <div class="barra-meta" id="barra-meta" role="img" aria-label=""><span id="barra-meta-preenche"></span></div>
         <p class="nota" id="nota-veredito"></p>
+        <p class="alerta atencao-bruto" id="aviso-bruto" hidden>⚠ Esta conta está <strong>bruta</strong>: sem imposto sobre o resgate e sem taxas de administração. O resultado real tende a ser menor. Preencha o imposto médio e os custos nas premissas, no fim da página.</p>
       </section>
 
       <section class="cartao" aria-labelledby="t-vida">
@@ -91,6 +101,16 @@
         </div>
       </section>
 
+      <section class="cartao" aria-labelledby="t-cenarios">
+        <div class="cartao-topo">
+          <h2 id="t-cenarios">E se o mercado render menos ou mais?</h2>
+          <span class="dica">Retornos constantes · reais de hoje</span>
+        </div>
+        <div class="tabela-rolagem"><table id="tabela-cenarios" class="tabela tabela-simples"></table></div>
+        <p id="texto-cenarios" class="lead-menor"></p>
+        <p class="nota">É um teste de estresse: os retornos são os mesmos todo ano. Na vida real eles oscilam, e uma queda forte perto da aposentadoria pesa mais do que a média sugere. A variação (±) pode ser mudada nas premissas.</p>
+      </section>
+
       <section class="cartao" aria-labelledby="t-idades">
         <div class="cartao-topo">
           <h2 id="t-idades">Se aposentar em outra idade</h2>
@@ -110,10 +130,11 @@
       <div class="cartao-topo"><h2 id="t-premissas">Premissas da aposentadoria</h2></div>
       <div id="campos-aposentadoria" class="campos"></div>
       <label class="check check-consorcio"><input type="checkbox" id="ap-consorcios"> <span>Incluir as parcelas de consórcio que ainda estiverem sendo pagas depois de aposentar</span></label>
+      <p class="nota"><strong>Imposto médio sobre o resgate:</strong> alíquota efetiva sobre o saldo da corretora e da previdência quando você resgatar (por exemplo, a tabela regressiva da previdência chega a 10% depois de 10 anos, e a renda variável paga 15% só sobre o ganho). Confirme o seu caso com o banco ou um contador. <strong>Custos ao ano:</strong> taxas de administração e custódia, em pontos percentuais tirados do retorno durante o acúmulo. Deixe em 0 para a conta bruta.</p>
       <p class="nota">Gasto e INSS em reais de hoje. O retorno é real (acima da inflação) e vale só para a fase da aposentadoria; durante o acúmulo valem os retornos da página Aportes. O patrimônio vem da série mês a mês de Aportes (corretora XP + previdência), descontado o déficit do orçamento, se houver.</p>
     </section>
 
-    <p class="aviso">Tudo é calculado em reais de hoje, qualquer que seja a escolha de valores nas outras páginas. Não considera impostos sobre resgates, custos de saúde que cresçam acima da inflação, nem mudanças nas regras do INSS. Simulação e organização pessoal, não é recomendação de investimento.</p>
+    <p class="aviso">Tudo é calculado em reais de hoje, qualquer que seja a escolha de valores nas outras páginas. Impostos e custos só entram se você os informar nas premissas. Não considera custos de saúde que cresçam acima da inflação, nem mudanças nas regras do INSS. Simulação e organização pessoal, não é recomendação de investimento.</p>
   </main>
 
   <script src="exemplo-publico.js"></script>

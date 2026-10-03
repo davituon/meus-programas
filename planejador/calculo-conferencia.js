@@ -53,7 +53,7 @@
       ["Compras nos cartões", d.cartao.compras.length > 0, "cartao.html"],
       ["Bens e dívidas", !igual(d.patrimonio, padrao.patrimonio), "patrimonio.html"],
       ["Premissas da aposentadoria", !igual(d.aposentadoria, padrao.aposentadoria), "aposentadoria.html"]
-    ].map(function (a) { return { nome: a[0], feita: a[1], pagina: a[2] }; });
+    ].map(function (a) { var conferida = !!(d.conferidas && d.conferidas[a[0]]); return { nome: a[0], feita: a[1] || conferida, conferida: conferida && !a[1], pagina: a[2] }; });
     var pendentes = areas.filter(function (a) { return !a.feita; });
     if (pendentes.length) {
       add("areas-exemplo", "confirme", pendentes.length + (pendentes.length === 1 ? " área ainda tem" : " áreas ainda têm") + " os valores de exemplo",
@@ -96,6 +96,8 @@
     if (num(d.aportes.prev.saldo) <= 0) add("prev-zero", "confirme", "Saldo da previdência está zerado", "Informe o saldo de hoje conforme o extrato da previdência.", "aportes.html");
     if (num(d.aportes.prev.empresa) === 0) add("prev-empresa", "info", "Sem contrapartida da empresa na previdência", "Se a empresa também contribui, informe o valor mensal na página Aportes.", "aportes.html");
     var cartasIguais = cotas.length === 4 && cotas.every(function (c, i) { return num(c.cota.carta) === num(cartasPadrao[i]); });
+    var semCustos = cotas.filter(function (c) { return num(c.cota.pago) > 0 && P.custosDaCota(c.cota) === 0; });
+    if (semCustos.length) add("cota-sem-custos", "confirme", "Consórcio contado pelo valor pago inteiro", semCustos.map(function (c) { return c.nome; }).join(", ") + ". Taxa de administração, fundo de reserva e seguro não voltam: informe a parte de cada parcela que é custo (na página Aportes) para o patrimônio contar só o fundo comum.", "aportes.html");
     if (cotas.some(function (c) { return num(c.cota.carta) === 0; })) add("cota-sem-carta", "confirme", "Cota de consórcio sem valor de carta", cotas.filter(function (c) { return num(c.cota.carta) === 0; }).map(function (c) { return c.nome; }).join(", ") + ".", "aportes.html");
     else if (cartasIguais) add("cota-cartas-padrao", "confirme", "As cartas dos consórcios ainda são as do cadastro antigo", "Elas foram atribuídas às cotas 1 a 4 por aproximação: confira qual carta é de qual cota.", "aportes.html");
     if (cotas.length && cotas.every(function (c) { return num(c.cota.pago) === 0; })) add("cota-sem-pago", "confirme", "Nenhuma cota informa o valor já pago antes de " + P.rotuloInicio(), "Esse valor entra no patrimônio e no acompanhamento do consórcio.", "patrimonio.html");
@@ -156,5 +158,16 @@
     };
   }
 
-  P.conferencia = { verificar: verificar, grupoDe: grupoDe };
+  /** Marca (ou desmarca) uma área como "já está certo", mesmo que ainda seja igual ao exemplo. Devolve false se o nome não existir. */
+  function conferir(nome, sim) {
+    var existe = verificar().areas.lista.some(function (a) { return a.nome === nome; });
+    if (!existe) return false;
+    var d = P.estado.dados;
+    if (!d.conferidas) d.conferidas = {};
+    if (sim === false) delete d.conferidas[nome]; else d.conferidas[nome] = true;
+    P.salvar();
+    return true;
+  }
+
+  P.conferencia = { verificar: verificar, grupoDe: grupoDe, conferir: conferir };
 })(window.Plano);

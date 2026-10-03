@@ -9,8 +9,10 @@
   function dataBr(iso) { var p = iso.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
   function ref() { return P.estado.dados.ref; }
 
+  function comSinal(v) { return (v < 0 ? "− " : "+ ") + moeda(Math.abs(v)); }
+
   function textoEstado(c) {
-    if (c.pago) return "✓ Pago em " + dataBr(c.pago);
+    if (c.pago) return "✓ Pago em " + dataBr(c.pago) + (Math.abs(c.diferenca) >= 0.005 ? " (" + comSinal(c.diferenca) + ")" : "");
     if (c.situacao === "atrasada") return "⚠ Atrasada há " + (-c.dias) + (c.dias === -1 ? " dia" : " dias");
     if (c.situacao === "hoje") return "! Vence hoje";
     if (c.situacao === "proxima") return "! Vence em " + c.dias + (c.dias === 1 ? " dia" : " dias") + " (" + dataBr(c.venc).slice(0, 5) + ")";
@@ -43,6 +45,18 @@
       else data.value = c.pago || "";
     });
     li.appendChild(data);
+    if (c.pago) {
+      var real = P.campoNumero({ moeda: true, prefixo: "R$", valor: c.real, rotulo: "Valor realmente pago: " + c.nome });
+      real.caixa.classList.add("pg-real");
+      real.caixa.title = "Quanto foi realmente pago. Se for igual ao previsto, deixe como está.";
+      real.campo.addEventListener("change", function () {
+        var v = P.lerNumero(real.campo.value);
+        if (v > 0 && P.pagamentos.definirReal(r.ano, r.mes, c.chave, v)) desenhar(); else { real.campo.value = P.formatoNumero.format(c.real); }
+      });
+      li.appendChild(real.caixa);
+    } else {
+      li.appendChild(el("span", { className: "pg-real vazio-real" }));
+    }
     return li;
   }
 
@@ -51,8 +65,8 @@
     var r = ref(), todas = P.pagamentos.contas(r.ano, r.mes), s = P.pagamentos.resumo(todas);
     texto("k-total", moeda(s.total));
     texto("k-total-det", s.qtd + (s.qtd === 1 ? " conta" : " contas") + " em " + P.MESES_LONGOS[r.mes - 1].toLowerCase() + "/" + r.ano);
-    texto("k-pago", moeda(s.pago));
-    texto("k-pago-det", s.qtdPagas + (s.qtdPagas === 1 ? " conta paga" : " contas pagas"));
+    texto("k-pago", moeda(s.pagoReal));
+    texto("k-pago-det", s.qtdPagas + (s.qtdPagas === 1 ? " conta paga" : " contas pagas") + (s.qtdPagas === 0 ? "" : Math.abs(s.desvio) < 0.005 ? ", igual ao previsto" : ", " + moeda(Math.abs(s.desvio)) + (s.desvio > 0 ? " acima do previsto" : " abaixo do previsto")));
     texto("k-pendente", moeda(s.pendente));
     texto("k-pendente-det", s.qtdPendentes === 0 ? "tudo pago" : s.qtdAtrasadas ? s.qtdAtrasadas + " atrasada(s) · " + s.qtdPendentes + " a pagar" : s.qtdPendentes + (s.qtdPendentes === 1 ? " conta a pagar" : " contas a pagar"));
     var aviso = document.getElementById("pg-aviso");
@@ -71,7 +85,25 @@
     Array.prototype.forEach.call(document.querySelectorAll(".pg-filtros button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-filtro") === filtro ? "true" : "false"); });
     var ul = limpar("contas"), vis = todas.filter(function (c) { return filtro === "todas" || (filtro === "pagas" ? !!c.pago : !c.pago); });
     vis.forEach(function (c) { ul.appendChild(linha(c)); });
+    historico();
     if (!vis.length) ul.appendChild(el("li", { className: "vazio", textContent: !todas.length ? "Nenhuma conta neste mês." : filtro === "pagas" ? "Nenhuma conta paga ainda." : "Nenhuma conta pendente." }));
+  }
+
+  function historico() {
+    var r = ref(), linhas = P.pagamentos.historico({ ano: r.ano, mes: r.mes }, 12), corpo = limpar("historico");
+    linhas.forEach(function (l) {
+      var tr = el("tr", { className: l.ano === r.ano && l.mes === r.mes ? "destaque-linha" : "" });
+      tr.appendChild(el("th", { scope: "row", textContent: P.MESES[l.mes - 1] + "/" + l.ano }));
+      tr.appendChild(el("td", { textContent: l.qtd ? moeda(l.previsto) : "–" }));
+      tr.appendChild(el("td", { textContent: l.qtdPagas ? moeda(l.pagoReal) : "–" }));
+      var desvio = el("td", { textContent: !l.qtdPagas ? "–" : Math.abs(l.desvio) < 0.005 ? "igual" : comSinal(l.desvio) });
+      if (l.qtdPagas && Math.abs(l.desvio) >= 0.005) desvio.className = l.desvio > 0 ? "negativo" : "positivo";
+      tr.appendChild(desvio);
+      tr.appendChild(el("td", { textContent: l.qtd ? (l.pendente > 0.005 ? moeda(l.pendente) : "0") : "–" }));
+      tr.appendChild(el("td", { textContent: l.qtd ? l.qtdPagas + " de " + l.qtd + (l.qtdAtrasadas ? " · " + l.qtdAtrasadas + " atrasada(s)" : "") : "–" }));
+      corpo.appendChild(tr);
+    });
+    if (!linhas.length) { var tr0 = el("tr"); tr0.appendChild(el("td", { colSpan: 6, className: "vazio", textContent: "Sem meses a mostrar." })); corpo.appendChild(tr0); }
   }
 
   Array.prototype.forEach.call(document.querySelectorAll(".pg-filtros button"), function (b) {

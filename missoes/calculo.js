@@ -3,6 +3,9 @@
 // Caminho do dinheiro: cada VENDA é dividida na hora. Uma parte vai para as reservas (dízimo, oferta, poupança, investimento, meu:
 // percentuais sobre o valor da venda, cada reserva num porquinho/separação própria). O que sobra fica na CONTA e serve para
 // doar às missões e comprar suprimentos para revender. Reservas têm retiradas (dízimo entregue, saque do "meu"...).
+// Reservas pessoais (poupança, investimento, meu) ficam no fundo, mas marcadas como "seu dinheiro": não entram na prestação de contas.
+// Capital de giro: quanto manter na conta para repor os suprimentos; só o que passar disso é "disponível para doar".
+// Custo (opcional) de cada venda: serve para calcular a margem. Cada doce tem um custo diferente, então ele é informado por venda.
 // A divisão de cada venda é gravada no momento do registro: mudar um percentual depois vale só para as próximas vendas.
 // Saldos que já existiam (ou rendimentos) entram como "ajustes" datados. O rendimento dos porquinhos é uma ESTIMATIVA: CDI anual
 // informado por você, capitalizado só em dias úteis (seg-sex, sem feriados, base 252), bruto de IR/IOF.
@@ -39,12 +42,13 @@
   /** Percentual de 0 a 100 (aceita zero). Devolve número ou null. */
   function lerPct(texto) { var n = /-/.test(String(texto)) ? null : lerNumeroBr(texto); return n !== null && n >= 0 && n <= 100 ? Math.round(n * 100) / 100 : null; }
 
-  function reservasPadrao() { return PADRAO.map(function (p) { return { id: p[0], nome: p[1], pct: p[2] }; }); }
+  var PESSOAIS = { poupanca: true, investimento: true, meu: true };
+  function reservasPadrao() { return PADRAO.map(function (p) { return { id: p[0], nome: p[1], pct: p[2], pessoal: !!PESSOAIS[p[0]] }; }); }
   function rendimentoPadrao() {
     return { cdi: null, pctCdi: 100, rende: { dizimo: false, oferta: true, poupanca: true, investimento: true, meu: true, conta: false } };
   }
   function vazio() {
-    return { versao: 3, reservas: reservasPadrao(), entradas: [], retiradas: [], suprimentos: [], missoes: [], envios: [], ajustes: [], conferencias: {}, rendimento: rendimentoPadrao() };
+    return { versao: 4, reservas: reservasPadrao(), giro: 0, entradas: [], retiradas: [], suprimentos: [], missoes: [], envios: [], ajustes: [], conferencias: {}, rendimento: rendimentoPadrao() };
   }
 
   /** Completa e limpa dados do armazenamento ou de um backup (inclusive da versão 1). Itens inválidos são descartados. */
@@ -53,11 +57,12 @@
     if (!bruto || typeof bruto !== "object" || Array.isArray(bruto)) return d;
     var lista = function (x) { return Array.isArray(x) ? x.filter(function (i) { return i && typeof i === "object" && !Array.isArray(i); }) : []; };
 
-    var res = lista(bruto.reservas).map(function (r) { return { id: String(r.id || ""), nome: String(r.nome || "").slice(0, 40), pct: lerPct(r.pct) }; })
+    var res = lista(bruto.reservas).map(function (r) { return { id: String(r.id || ""), nome: String(r.nome || "").slice(0, 40), pct: lerPct(r.pct), pessoal: typeof r.pessoal === "boolean" ? r.pessoal : !!PESSOAIS[String(r.id || "")] }; })
       .filter(function (r) { return r.id && r.nome && r.pct !== null; });
     if (res.length && res.reduce(function (t, r) { return t + r.pct; }, 0) <= 100) d.reservas = res;
     var resIds = {}; d.reservas.forEach(function (r) { resIds[r.id] = true; });
 
+    d.giro = isFinite(Number(bruto.giro)) && Number(bruto.giro) > 0 ? arred(Number(bruto.giro)) : 0;
     d.missoes = lista(bruto.missoes).map(function (m) { return { id: String(m.id || novoId()), nome: String(m.nome || "").slice(0, 60), meta: Math.max(0, num(m.meta)) }; }).filter(function (m) { return m.nome; });
     var misIds = {}; d.missoes.forEach(function (m) { misIds[m.id] = true; });
 
@@ -66,7 +71,9 @@
       if (e.partes && typeof e.partes === "object" && !Array.isArray(e.partes)) Object.keys(e.partes).forEach(function (k) { if (resIds[k] && num(e.partes[k]) > 0) partes[k] = arred(num(e.partes[k])); });
       var soma = Object.keys(partes).reduce(function (t, k) { return t + partes[k]; }, 0);
       if (soma > num(e.valor) + 0.001) partes = {};
-      return { id: String(e.id || novoId()), data: e.data, origem: String(e.origem || "").slice(0, 60), valor: arred(num(e.valor)), partes: partes };
+      var venda = { id: String(e.id || novoId()), data: e.data, origem: String(e.origem || "").slice(0, 60), valor: arred(num(e.valor)), partes: partes };
+      if (e.custo !== undefined && e.custo !== null && e.custo !== "" && isFinite(Number(e.custo)) && Number(e.custo) >= 0) venda.custo = arred(Number(e.custo));
+      return venda;
     });
     d.retiradas = lista(bruto.retiradas).filter(function (e) { return dataValida(e.data) && num(e.valor) > 0 && resIds[e.reservaId]; })
       .map(function (e) { return { id: String(e.id || novoId()), data: e.data, reservaId: e.reservaId, valor: arred(num(e.valor)), nota: String(e.nota || "").slice(0, 60) }; });
@@ -114,10 +121,18 @@
     var reservas = d.reservas.map(function (r) {
       var acumulado = arred(d.entradas.reduce(function (t, e) { return t + parteDe(e, r.id); }, 0)), retirado = somar(d.retiradas.filter(function (x) { return x.reservaId === r.id; }));
       var ajustado = somar(d.ajustes.filter(function (x) { return x.chave === r.id; }));
-      return { id: r.id, nome: r.nome, pct: r.pct, acumulado: acumulado, ajustado: ajustado, retirado: retirado, saldo: arred(acumulado + ajustado - retirado) };
+      return { id: r.id, nome: r.nome, pct: r.pct, pessoal: !!r.pessoal, acumulado: acumulado, ajustado: ajustado, retirado: retirado, saldo: arred(acumulado + ajustado - retirado) };
     });
     var separado = arred(reservas.reduce(function (t, r) { return t + r.acumulado; }, 0));
     var ajustadoConta = somar(d.ajustes.filter(function (x) { return x.chave === "conta"; })), livre = arred(vendido - separado - enviado - suprimentos + ajustadoConta);
+    var giro = Math.max(0, num(d.giro)), disponivel = Math.max(0, arred(livre - giro));
+    var comCusto = d.entradas.filter(function (e) { return typeof e.custo === "number"; });
+    var recCusto = somar(comCusto), custoTotal = arred(comCusto.reduce(function (t, e) { return t + e.custo; }, 0)), pctReservasTotal = d.reservas.reduce(function (t, r) { return t + r.pct; }, 0);
+    var margem = {
+      qtd: comCusto.length, semCusto: d.entradas.length - comCusto.length, receita: recCusto, custo: custoTotal, lucro: arred(recCusto - custoTotal),
+      pct: recCusto > 0 ? (recCusto - custoTotal) / recCusto : null, pctReservas: pctReservasTotal / 100,
+      sobraPct: recCusto > 0 ? (recCusto - custoTotal) / recCusto - pctReservasTotal / 100 : null
+    };
     var porMes = {}, linhaMes = function (k) { return (porMes[k] = porMes[k] || { mes: k, vendido: 0, enviado: 0, suprimentos: 0, qtd: 0 }); };
     d.entradas.forEach(function (e) { var l = linhaMes(e.data.slice(0, 7)); l.vendido = arred(l.vendido + e.valor); l.qtd++; });
     d.envios.forEach(function (e) { var l = linhaMes(e.data.slice(0, 7)); l.enviado = arred(l.enviado + e.valor); });
@@ -135,7 +150,11 @@
     });
     return {
       vendido: vendido, vendidoMes: somar(doMes(d.entradas)), qtdEntradas: d.entradas.length, reservas: reservas, separado: separado,
-      separadoSaldo: arred(reservas.reduce(function (t, r) { return t + r.saldo; }, 0)), pctReservas: arred(d.reservas.reduce(function (t, r) { return t + r.pct; }, 0)),
+      separadoSaldo: arred(reservas.reduce(function (t, r) { return t + r.saldo; }, 0)),
+      saldoPessoal: arred(reservas.filter(function (r) { return r.pessoal; }).reduce(function (t, r) { return t + r.saldo; }, 0)),
+      saldoMissao: arred(reservas.filter(function (r) { return !r.pessoal; }).reduce(function (t, r) { return t + r.saldo; }, 0)),
+      giro: giro, disponivel: disponivel, margem: margem,
+      pctReservas: arred(d.reservas.reduce(function (t, r) { return t + r.pct; }, 0)),
       livre: livre, ajustadoConta: ajustadoConta, enviado: enviado, enviadoMes: somar(doMes(d.envios)), suprimentos: suprimentos, suprimentosMes: somar(doMes(d.suprimentos)),
       porMes: Object.keys(porMes).sort().reverse().map(function (k) { return porMes[k]; }), missoes: missoes,
       metaTotal: arred(d.missoes.reduce(function (t, m) { return t + m.meta; }, 0)), conferencias: conferencias
@@ -150,7 +169,24 @@
     var valor = lerValor(x.valor);
     if (valor === null) return "Informe um valor maior que zero.";
     if (!dataValida(x.data)) return "Informe uma data válida.";
-    d.entradas.push({ id: novoId(), data: x.data, origem: String(x.origem || "").trim().slice(0, 60), valor: valor, partes: dividir(d, valor).partes });
+    var custo = null;
+    if (x.custo !== undefined && x.custo !== null && String(x.custo).trim() !== "") {
+      var c = lerNumeroBr(x.custo);
+      if (c === null || /-/.test(String(x.custo)) || c < 0) return "O custo deve ser um valor (zero ou mais) ou ficar em branco.";
+      custo = arred(c);
+    }
+    var venda = { id: novoId(), data: x.data, origem: String(x.origem || "").trim().slice(0, 60), valor: valor, partes: dividir(d, valor).partes };
+    if (custo !== null) venda.custo = custo;
+    d.entradas.push(venda);
+    return null;
+  }
+
+  /** Quanto manter na conta para repor os suprimentos (capital de giro). Vazio vale zero. */
+  function definirGiro(d, texto) {
+    if (String(texto === undefined || texto === null ? "" : texto).trim() === "") { d.giro = 0; return null; }
+    var n = lerNumeroBr(texto);
+    if (n === null || /-/.test(String(texto)) || n < 0) return "Informe o capital de giro em reais (zero ou mais).";
+    d.giro = arred(n);
     return null;
   }
   function adicionarSuprimento(d, x) {
@@ -184,7 +220,9 @@
     if (valor === null) return "Informe um valor maior que zero.";
     if (!dataValida(x.data)) return "Informe uma data válida.";
     if (!d.missoes.some(function (m) { return m.id === x.missaoId; })) return "Escolha a missão.";
-    if (valor > resumo(d).livre + 0.001) return "A doação é maior que o saldo livre da conta.";
+    var atual = resumo(d);
+    if (valor > atual.livre + 0.001) return "A doação é maior que o saldo livre da conta.";
+    if (!x.mesmoAssim && atual.giro > 0 && valor > atual.disponivel + 0.001) return "Esta doação deixaria a conta abaixo do capital de giro (R$ " + atual.giro.toFixed(2).replace(".", ",") + "). Marque \"Doar mesmo assim\" para continuar.";
     d.envios.push({ id: novoId(), data: x.data, missaoId: x.missaoId, valor: valor });
     return null;
   }
@@ -326,13 +364,13 @@
       var valor = somar(enviosMes.filter(function (e) { return e.missaoId === m.id; })), t = fimRes.missoes.filter(function (x) { return x.id === m.id; })[0];
       return { nome: m.nome, valor: valor, meta: m.meta, acumulado: t.enviado, pct: t.pct };
     }).filter(function (x) { return x.valor > 0; });
-    var reservas = d.reservas.map(function (x) {
+    var reservas = d.reservas.filter(function (x) { return !x.pessoal; }).map(function (x) {
       return { nome: x.nome, pct: x.pct, separado: arred(vendasMes.reduce(function (t, e) { return t + parteDe(e, x.id); }, 0)), retirado: somar(retMes.filter(function (e) { return e.reservaId === x.id; })), saldoFinal: fimRes.reservas.filter(function (y) { return y.id === x.id; })[0].saldo };
     });
     var rendimentos = somar(doMes(d.ajustes).filter(function (a) { return a.tipo === "rendimento"; }));
     return {
       mes: mes, vendido: somar(vendasMes), qtdVendas: vendasMes.length, doado: somar(enviosMes), doacoes: doacoes, suprimentos: somar(supMes), qtdSuprimentos: supMes.length,
-      reservas: reservas, rendimentos: rendimentos, saldoLivre: fimRes.livre, saldoReservas: fimRes.separadoSaldo,
+      reservas: reservas, rendimentos: rendimentos, saldoLivre: fimRes.livre, saldoReservas: fimRes.saldoMissao,
       semMovimento: !vendasMes.length && !enviosMes.length && !supMes.length && !retMes.length && rendimentos === 0
     };
   }
@@ -373,7 +411,7 @@
     novoId: novoId, dataValida: dataValida, hoje: hoje, lerValor: lerValor, lerPct: lerPct, vazio: vazio, normalizar: normalizar, resumo: resumo, dividir: dividir,
     adicionarEntrada: adicionarEntrada, adicionarSuprimento: adicionarSuprimento, adicionarRetirada: adicionarRetirada, adicionarMissao: adicionarMissao, adicionarEnvio: adicionarEnvio,
     definirPercentual: definirPercentual, removerEntrada: removerEntrada, removerEnvio: removerEnvio, removerSuprimento: removerSuprimento, removerRetirada: removerRetirada,
-    removerMissao: removerMissao, informarSaldo: informarSaldo,
+    removerMissao: removerMissao, informarSaldo: informarSaldo, definirGiro: definirGiro,
     prestacao: prestacao, textoPrestacao: textoPrestacao, adicionarAjuste: adicionarAjuste, removerAjuste: removerAjuste, definirCdi: definirCdi, marcarRende: marcarRende, rendimento: rendimento, lancarRendimentos: lancarRendimentos
   };
 })();

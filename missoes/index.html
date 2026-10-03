@@ -41,7 +41,7 @@
       <article class="kpi resultado positivo">
         <span class="kpi-rotulo">Livre na conta</span>
         <strong id="k-livre">–</strong>
-        <small>para doar e comprar suprimentos</small>
+        <small id="k-livre-det">para doar e comprar suprimentos</small>
       </article>
       <article class="kpi">
         <span class="kpi-rotulo">Doado às missões</span>
@@ -58,6 +58,7 @@
         <label>Data<input type="date" id="e-data" required></label>
         <label>Cliente / descrição (opcional)<input type="text" id="e-origem" maxlength="60" placeholder="ex.: doces do culto"></label>
         <label>Valor da venda (R$)<input type="text" id="e-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <label>Custo dessa venda (R$, opcional)<input type="text" id="e-custo" inputmode="decimal" placeholder="quanto gastou nos doces"></label>
         <button type="submit">Registrar venda</button>
       </form>
       <p id="previa" class="nota" aria-live="polite"></p>
@@ -117,6 +118,20 @@
         <button type="submit">Registrar compra</button>
       </form>
       <ul id="suprimentos" class="mi-lista"></ul>
+      <h3 class="mi-subtitulo">Capital de giro</h3>
+      <p class="nota">É o dinheiro que fica na conta para repor os suprimentos da próxima leva. Só o que passar disso aparece como "disponível para doar".</p>
+      <form id="f-giro" class="formulario" autocomplete="off">
+        <label>Manter na conta pelo menos (R$)<input type="text" id="g-valor" inputmode="decimal" placeholder="0,00"></label>
+        <button type="submit">Salvar capital de giro</button>
+      </form>
+      <p id="giro-texto" class="nota" role="status"></p>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-margem">
+      <div class="cartao-topo"><h2 id="t-margem">Margem das vendas</h2><span class="dica">Quanto sobra de cada venda depois do custo</span></div>
+      <p class="nota">Cada doce tem um custo diferente, então o custo é informado em cada venda (campo opcional ao registrar). Só as vendas com custo informado entram na conta.</p>
+      <ul id="margem" class="composicao"></ul>
+      <p id="margem-texto" class="lead-menor" role="status"></p>
     </section>
 
     <section class="cartao" aria-labelledby="t-missoes">
@@ -128,10 +143,12 @@
       </form>
       <ul id="missoes" class="mi-lista"></ul>
       <h3 class="mi-subtitulo">Doar a uma missão</h3>
+      <p id="doar-aviso" class="nota"></p>
       <form id="f-envio" class="formulario" autocomplete="off">
         <label>Data<input type="date" id="v-data" required></label>
         <label>Missão<select id="v-missao" required></select></label>
         <label>Valor (R$)<input type="text" id="v-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <label class="mi-marca-linha"><span><input type="checkbox" id="v-mesmo"> Doar mesmo que fique abaixo do capital de giro</span></label>
         <button type="submit">Registrar doação</button>
       </form>
       <ul id="envios" class="mi-lista"></ul>
@@ -162,13 +179,13 @@
       <div class="cartao-topo"><h2 id="t-prest">Prestação de contas</h2><span class="dica">Resumo do mês para mostrar a quem contribui</span></div>
       <div class="formulario">
         <label>Mês<input type="month" id="pc-mes"></label>
-        <label class="mi-marca-linha"><span><input type="checkbox" id="pc-reservas"> Incluir as reservas (dízimo, oferta, poupança…)</span></label>
+        <label class="mi-marca-linha"><span><input type="checkbox" id="pc-reservas"> Incluir as reservas da missão (dízimo e oferta)</span></label>
         <button type="button" id="pc-copiar" class="secundario">Copiar texto</button>
         <button type="button" id="pc-imprimir" class="secundario">Imprimir / salvar PDF</button>
       </div>
       <p id="pc-aviso" class="nota" role="status"></p>
       <pre id="pc-texto" class="mi-relatorio" aria-label="Prestação de contas do mês"></pre>
-      <p class="nota">O resumo não traz nomes de clientes nem descrições das compras. As reservas ficam de fora, a menos que você marque para incluir.</p>
+      <p class="nota">O resumo não traz nomes de clientes nem descrições das compras. As reservas da missão ficam de fora, a menos que você marque para incluir; poupança, investimento e meu são seus e nunca entram.</p>
     </section>
 
     <p class="aviso">Os dados ficam só neste navegador (nada é enviado a lugar nenhum). Baixe um backup de vez em quando. O programa não consulta o banco: os saldos dos porquinhos e da conta são informados por você.</p>

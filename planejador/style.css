@@ -189,7 +189,9 @@ body.oculto .kpi strong, body.oculto .selo, body.oculto .legenda b { letter-spac
 @media (max-width: 560px) { .topo-acoes { width: 100%; } .topo-acoes .seletor-mes { width: 100%; } }
 
 /* ---------- navegação entre páginas ---------- */
-.paginas { display: flex; gap: 6px; margin-top: 6px; flex-wrap: wrap; }
+.paginas { display: flex; gap: 8px 22px; margin-top: 6px; flex-wrap: wrap; align-items: center; }
+.grupo-menu { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
+.grupo-rotulo { color: rgba(255, 255, 255, .85); font-size: .72rem; font-weight: 700; text-transform: uppercase; letter-spacing: .7px; margin-right: 2px; }
 .paginas a { color: #fff; text-decoration: none; padding: 4px 14px; border-radius: 99px; background: rgba(255, 255, 255, .12); font-size: .92rem; }
 .paginas a:hover { background: rgba(255, 255, 255, .24); }
 .paginas a[aria-current="page"] { background: #fff; color: var(--marca); font-weight: 600; }
@@ -489,7 +491,7 @@ details.conf-grupo .conf-lista { margin-top: 12px; }
 .pg-barra { height: 10px; border-radius: 5px; background: var(--borda); overflow: hidden; margin-bottom: 12px; }
 .pg-barra span { display: block; height: 100%; background: var(--bom); }
 .pg-lista { list-style: none; margin: 0; padding: 0; }
-.pg-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto 72px 200px 150px; gap: 12px; align-items: center; padding: 10px 12px; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid var(--c-folha); background: var(--campo); }
+.pg-item { display: grid; grid-template-columns: 28px minmax(0, 1fr) auto 72px 200px 150px 150px; gap: 12px; align-items: center; padding: 10px 12px; margin-bottom: 8px; border-radius: 10px; border-left: 5px solid var(--c-folha); background: var(--campo); }
 .pg-item.paga { border-left-color: var(--bom); background: var(--bom-fundo); }
 .pg-marca input { width: 22px; height: 22px; cursor: pointer; }
 .pg-corpo strong { display: block; font-size: .96rem; }
@@ -506,7 +508,9 @@ details.conf-grupo .conf-lista { margin-top: 12px; }
 .pg-item.alerta { border-left-style: dashed; }
 .pg-aviso { margin: 10px 0; padding: 10px 14px; border-radius: 10px; border: 1px solid var(--c-folha); font-weight: 600; }
 .pg-aviso.critico { border-color: var(--ruim); background: var(--ruim-fundo); color: var(--ruim); }
-@media (max-width: 760px) { .pg-item { grid-template-columns: 28px minmax(0, 1fr) auto; } .pg-dia, .pg-estado, .pg-data { grid-column: 2 / -1; } }
+@media (max-width: 760px) { .pg-item { grid-template-columns: 28px minmax(0, 1fr) auto; } .pg-dia, .pg-estado, .pg-data, .pg-real { grid-column: 2 / -1; } .vazio-real { display: none; } }
+.pg-real { min-width: 0; }
+.pg-real input { min-height: 34px; }
 
 /* ---------- toque no celular: alvos de pelo menos 24 px ---------- */
 .no-aporte, label.mi-marca { min-height: 28px; display: inline-flex; align-items: center; }
@@ -514,3 +518,31 @@ input[type="range"] { height: 28px; }
 .conf-ir { display: inline-block; min-height: 24px; padding: 3px 0; }
 button.remover { min-width: 28px; min-height: 28px; }
 .lista-areas li a { display: inline-block; min-height: 24px; padding: 3px 0; }
+
+/* ---------- saúde financeira (Início) ---------- */
+.saude { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 12px; margin: 10px 0; }
+.saude-item { padding: 12px 14px; border-radius: 12px; border: 1px solid var(--borda); border-left: 5px solid var(--borda); background: var(--campo); display: grid; gap: 4px; align-content: start; }
+.saude-topo { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; align-items: baseline; }
+.saude-titulo { font-weight: 600; font-size: .9rem; }
+.saude-nivel { font-size: .78rem; font-weight: 700; }
+.saude-item strong { font-size: 1.6rem; line-height: 1.2; font-variant-numeric: tabular-nums; }
+.saude-item p { font-size: .85rem; color: var(--suave); }
+.saude-item.nivel-bom { border-left-color: var(--bom); background: var(--bom-fundo); }
+.saude-item.nivel-bom .saude-nivel { color: var(--bom); }
+.saude-item.nivel-atencao { border-left-color: var(--c-folha); border-left-style: dashed; }
+.saude-item.nivel-atencao .saude-nivel { color: var(--c-folha); }
+.saude-item.nivel-alerta { border-left-color: var(--ruim); background: var(--ruim-fundo); }
+.saude-item.nivel-alerta .saude-nivel { color: var(--ruim); }
+.saude-item.nivel-bom p, .saude-item.nivel-alerta p { color: var(--texto); }
+.alerta.atencao-bruto { background: color-mix(in srgb, var(--c-folha) 12%, var(--cartao)); color: var(--texto); border-color: var(--c-folha); margin: 12px 0 0; }
+.lead-menor { margin: 12px 0 6px; font-size: .98rem; }
+#tabela-cenarios thead th small { display: block; font-weight: 400; color: var(--suave); font-size: .75rem; }
+
+/* ---------- primeiros passos (Início) ---------- */
+.passos-lista { list-style: none; margin: 10px 0 0; padding: 0; }
+.passo { display: grid; grid-template-columns: 22px minmax(0, 1fr) auto auto; gap: 10px; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--borda); font-size: .93rem; }
+.passo-marca { font-weight: 700; color: var(--c-folha); }
+.passo-nome small { color: var(--suave); }
+.passo button { padding: 4px 12px; font-size: .85rem; min-height: 32px; }
+.passo-mais { padding: 8px 0; color: var(--suave); font-size: .88rem; }
+@media (max-width: 640px) { .passo { grid-template-columns: 22px minmax(0, 1fr); } .passo > a, .passo > button { grid-column: 2; justify-self: start; } }

@@ -105,6 +105,8 @@ window.Plano = (function () {
     if (!Array.isArray(salvo.patrimonio.bens)) salvo.patrimonio.bens = copiar(EXEMPLO.patrimonio.bens);
     if (!Array.isArray(salvo.patrimonio.dividas)) salvo.patrimonio.dividas = [];
     if (salvo.carteira === undefined) salvo.carteira = null;
+    if (!salvo.conferidas || typeof salvo.conferidas !== "object" || Array.isArray(salvo.conferidas)) salvo.conferidas = {};
+    if (!salvo.realizados || typeof salvo.realizados !== "object" || Array.isArray(salvo.realizados)) salvo.realizados = {};
     if (!salvo.pagamentos || typeof salvo.pagamentos !== "object" || Array.isArray(salvo.pagamentos)) salvo.pagamentos = {};
     if (!salvo.cartao || !Array.isArray(salvo.cartao.compras)) salvo.cartao = { compras: [] };
     if (!Array.isArray(salvo.cartao.cartoes) || !salvo.cartao.cartoes.length) salvo.cartao.cartoes = copiar(EXEMPLO.cartao.cartoes);
@@ -120,6 +122,7 @@ window.Plano = (function () {
       if (d.ate === undefined) d.ate = padrao ? padrao.ate : "";
       if (d.reaj === undefined) d.reaj = padrao && padrao.reaj !== undefined ? padrao.reaj : null;
       if (d.cota === undefined && padrao && padrao.cota) d.cota = copiar(padrao.cota);
+      if (d.cota && d.cota.custos === undefined) d.cota.custos = 0;
     });
     salvo.reembolsos.forEach(function (d) { if (d.ate === undefined) d.ate = ""; });
     salvo.reservas.forEach(function (r) { if (r.aporte === undefined) { var p = padraoPorNome("reservas", r.nome); r.aporte = p ? p.aporte : false; } });
@@ -318,26 +321,38 @@ window.Plano = (function () {
   // ---------------------------------------------------------------- patrimônio atual
   var NOMES_TIPO_BEM = { imovel: "Imóveis", veiculo: "Veículos", outro: "Outros bens" };
 
+  /** Parte (%) de cada parcela do consórcio que é custo (taxa de administração, fundo de reserva, seguro) e não volta; 0 a 60. */
+  function custosDaCota(cota) { var v = Number(cota && cota.custos); return isFinite(v) ? Math.max(0, Math.min(60, v)) : 0; }
+
   /**
    * Patrimônio de hoje, sem contar nada duas vezes: corretora XP (a carteira importada só atualiza esse saldo), previdência,
-   * valor já pago nas cotas de consórcio (a carta de crédito só vira patrimônio quando é usada), bens e, subtraindo, dívidas.
+   * fundo comum já pago nas cotas de consórcio (o que foi pago menos os custos da parcela; a carta de crédito só vira patrimônio
+   * quando é usada), bens e, subtraindo, dívidas. `consorcio` é o fundo comum; `consorcioPago` o total pago e `consorcioCustos` a diferença.
    */
   function patrimonioAtual() {
     var d0 = estado.dados, p = d0.patrimonio, num = function (v) { return Number(v) || 0; };
     var xp = num(d0.aportes.xp.saldo), prev = num(d0.aportes.prev.saldo);
-    var cotas = d0.despesas.filter(function (x) { return x.cota; }).map(function (x) { return { nome: x.nome, pago: num(x.cota.pago) }; });
-    var consorcio = cotas.reduce(function (t, c) { return t + c.pago; }, 0);
+    var cotas = d0.despesas.filter(function (x) { return x.cota; }).map(function (x) {
+      var pago = num(x.cota.pago), custos = pago * custosDaCota(x.cota) / 100;
+      return { nome: x.nome, pago: pago, custos: custos, fundoComum: pago - custos, pctCustos: custosDaCota(x.cota) };
+    });
+    var consorcioPago = cotas.reduce(function (t, c) { return t + c.pago; }, 0);
+    var consorcioCustos = cotas.reduce(function (t, c) { return t + c.custos; }, 0);
+    var consorcio = consorcioPago - consorcioCustos;
     var porTipo = { imovel: 0, veiculo: 0, outro: 0 };
     p.bens.forEach(function (b) { var t = porTipo.hasOwnProperty(b.tipo) ? b.tipo : "outro"; porTipo[t] += num(b.valor); });
     var bens = porTipo.imovel + porTipo.veiculo + porTipo.outro;
     var dividas = p.dividas.reduce(function (t, x) { return t + num(x.valor); }, 0);
     var financeiro = xp + prev, ativos = financeiro + consorcio + bens;
-    return { xp: xp, prev: prev, financeiro: financeiro, cotas: cotas, consorcio: consorcio, porTipo: porTipo, bens: bens, dividas: dividas, ativos: ativos, liquido: ativos - dividas };
+    return { xp: xp, prev: prev, financeiro: financeiro, cotas: cotas, consorcio: consorcio, consorcioPago: consorcioPago, consorcioCustos: consorcioCustos, porTipo: porTipo, bens: bens, dividas: dividas, ativos: ativos, liquido: ativos - dividas };
   }
 
-  /** Taxa mensal equivalente ao retorno anual nominal informado (em "reais de hoje", já descontada a inflação). */
-  function taxaMensal(retornoPct) {
-    var r = estado.dados.reajuste, anual = (Number(retornoPct) || 0) / 100;
+  /**
+   * Taxa mensal equivalente ao retorno anual nominal informado (em "reais de hoje", já descontada a inflação).
+   * `custoPct` (opcional) são pontos percentuais ao ano de taxas (administração, custódia) tirados do retorno.
+   */
+  function taxaMensal(retornoPct, custoPct) {
+    var r = estado.dados.reajuste, anual = ((Number(retornoPct) || 0) - (Number(custoPct) || 0)) / 100;
     if (r.modo === "real") anual = (1 + anual) / (1 + (Number(r.inflacao) || 0) / 100) - 1;
     return Math.pow(1 + anual, 1 / 12) - 1;
   }
@@ -346,9 +361,9 @@ window.Plano = (function () {
    * Evolução mês a mês, do primeiro mês do plano (out/2026) até o fim do horizonte: aportes, rendimento, saldos da corretora e da
    * previdência, e o consórcio pago (somando mês a mês até a contemplação de cada cota).
    */
-  function serieAportes() {
-    var d0 = estado.dados, A = d0.aportes;
-    var rx = taxaMensal(A.xp.retorno), rp = taxaMensal(A.prev.retorno);
+  function serieAportes(opcoes) {
+    var d0 = estado.dados, A = d0.aportes, custo = opcoes && opcoes.custo ? Number(opcoes.custo) || 0 : 0;
+    var rx = taxaMensal(A.xp.retorno, custo), rp = taxaMensal(A.prev.retorno, custo);
     var xp = Number(A.xp.saldo) || 0, pv = Number(A.prev.saldo) || 0;
     var cotas = d0.despesas.filter(function (d) { return d.cota; });
     var inicio = INICIO.ano * 12 + INICIO.mes - 1, fim = (ANO_INICIAL + ANOS) * 12 - 1;
@@ -546,7 +561,7 @@ window.Plano = (function () {
     rotuloInicio: rotuloInicio, estado: estado, copiar: copiar, dadosPadrao: dadosPadrao, salvar: salvar, definirDados: definirDados, antesDoInicio: antesDoInicio,
     moeda: moeda, moedaInteira: moedaInteira, formatoNumero: formatoNumero, lerNumero: lerNumero, formatarAte: formatarAte, lerAte: lerAte,
     indiceDe: indiceDe, pctDe: pctDe, ativo: ativo, taxaDoItem: taxaDoItem, fator: fator, somaMes: somaMes, pctReservas: pctReservas,
-    patrimonioAtual: patrimonioAtual, NOMES_TIPO_BEM: NOMES_TIPO_BEM, calcMes: calcMes, parcelaDaCompra: parcelaDaCompra, valorNaFatura: valorNaFatura, parcelasRestantes: parcelasRestantes, faturaDoMes: faturaDoMes, taxaMensal: taxaMensal, serieAportes: serieAportes, emReais: emReais, linhaDoMes: linhaDoMes,
+    custosDaCota: custosDaCota, patrimonioAtual: patrimonioAtual, NOMES_TIPO_BEM: NOMES_TIPO_BEM, calcMes: calcMes, parcelaDaCompra: parcelaDaCompra, valorNaFatura: valorNaFatura, parcelasRestantes: parcelasRestantes, faturaDoMes: faturaDoMes, taxaMensal: taxaMensal, serieAportes: serieAportes, emReais: emReais, linhaDoMes: linhaDoMes,
     montarBackup: montarBackup, lerBackup: lerBackup, restaurarBackup: restaurarBackup, ultimoBackup: ultimoBackup, registrarBackupFeito: registrarBackupFeito, backupAtrasado: backupAtrasado,
     limpar: limpar, soma: soma,
     el: el, texto: texto, nomeMes: nomeMes, campoNumero: campoNumero, cabecalhoMeses: cabecalhoMeses, centrarTabela: centrarTabela, desenharCabecalho: desenharCabecalho, iniciarCabecalho: iniciarCabecalho

@@ -59,7 +59,7 @@
       var li = el("li", { className: a.feita ? "feita" : "pendente" });
       li.appendChild(el("span", { className: "area-marca", textContent: a.feita ? "✓" : "○" }));
       li.appendChild(el("span", { className: "area-nome", textContent: a.nome }));
-      li.appendChild(el("span", { className: "area-estado", textContent: a.feita ? "preenchida" : "ainda é o exemplo" }));
+      li.appendChild(el("span", { className: "area-estado", textContent: a.feita ? (a.conferida ? "confirmada: já está certo" : "preenchida") : "ainda é o exemplo" }));
       li.appendChild(el("a", { href: a.pagina, textContent: PAGINAS[a.pagina] }));
       areas.appendChild(li);
     });

@@ -101,7 +101,7 @@
     texto("k-financeiro", moeda(p.financeiro));
     texto("k-financeiro-det", pctTexto(p.financeiro, p.ativos) + " dos bens e direitos · XP + previdência");
     texto("k-bens", moeda(p.bens + p.consorcio));
-    texto("k-bens-det", "bens " + moeda(p.bens) + " · consórcios pagos " + moeda(p.consorcio));
+    texto("k-bens-det", "bens " + moeda(p.bens) + " · consórcios (fundo comum) " + moeda(p.consorcio));
     texto("k-dividas", moeda(p.dividas));
     texto("k-dividas-det", p.dividas > 0 ? pctTexto(p.dividas, p.ativos) + " dos bens e direitos" : "nenhuma dívida cadastrada");
     texto("selo-bens", moeda(p.bens));
@@ -147,7 +147,7 @@
     conta.append(
       linhaLista("Corretora XP", moeda(p.xp)),
       linhaLista("Previdência privada", moeda(p.prev)),
-      linhaLista("Consórcios: valor já pago", moeda(p.consorcio)),
+      linhaLista(p.consorcioCustos > 0 ? "Consórcios: fundo comum já pago (de " + moeda(p.consorcioPago) + " pagos)" : "Consórcios: valor já pago", moeda(p.consorcio)),
       linhaLista("Imóveis", moeda(p.porTipo.imovel)),
       linhaLista("Veículos", moeda(p.porTipo.veiculo)),
       linhaLista("Outros bens", moeda(p.porTipo.outro)),

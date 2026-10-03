@@ -80,8 +80,9 @@
     texto("k-vendido", moeda(r.vendido));
     texto("k-vendido-det", moeda(r.vendidoMes) + " neste mês · " + r.qtdEntradas + (r.qtdEntradas === 1 ? " venda" : " vendas"));
     texto("k-reservas", moeda(r.separadoSaldo));
-    texto("k-reservas-det", pctTxt(r.pctReservas) + " de cada venda vai para as reservas");
+    texto("k-reservas-det", "seu: " + moeda(r.saldoPessoal) + " · da missão: " + moeda(r.saldoMissao));
     texto("k-livre", moeda(r.livre));
+    texto("k-livre-det", r.giro > 0 ? "disponível para doar: " + moeda(r.disponivel) + " (giro " + moeda(r.giro) + ")" : "para doar e comprar suprimentos");
     texto("k-enviado", moeda(r.enviado));
     texto("k-enviado-det", dados.missoes.length ? "para " + dados.missoes.length + (dados.missoes.length === 1 ? " missão" : " missões") + " · " + moeda(r.suprimentos) + " em suprimentos" : "nenhuma missão cadastrada ainda");
 
@@ -89,7 +90,8 @@
     var ul = limpar("entradas");
     dados.entradas.slice().sort(porData).forEach(function (e) {
       var reservado = Object.keys(e.partes).reduce(function (t, k) { return t + e.partes[k]; }, 0);
-      ul.appendChild(item(e.data, (e.origem ? nome(e.origem) : "(sem descrição)") + " · " + "ficou na conta " + moeda(Math.round((e.valor - reservado) * 100) / 100), e.valor, "+", "a venda de " + dataBr(e.data),
+      var custoTxt = typeof e.custo === "number" ? " · custo " + moeda(e.custo) + " (margem " + (e.valor > 0 ? Math.round((e.valor - e.custo) / e.valor * 100) + "%" : "–") + ")" : "";
+      ul.appendChild(item(e.data, (e.origem ? nome(e.origem) : "(sem descrição)") + " · " + "ficou na conta " + moeda(Math.round((e.valor - reservado) * 100) / 100) + custoTxt, e.valor, "+", "a venda de " + dataBr(e.data),
         function () { aplicar(M.removerEntrada(dados, e.id), "Venda removida."); }));
     });
     vazioNaLista(ul, "Nenhuma venda ainda. Registre a primeira acima.");
@@ -98,6 +100,7 @@
     var tb = limpar("reservas");
     r.reservas.forEach(function (x) {
       var tr = el("tr"), th = el("th", { scope: "row", textContent: x.nome });
+      th.appendChild(el("small", { className: "mi-tag " + (x.pessoal ? "seu" : "missao"), textContent: x.pessoal ? "seu dinheiro" : "da missão" }));
       var td = el("td"), campo = el("input", { type: "text", value: String(x.pct).replace(".", ","), className: "mi-pct", inputMode: "decimal", maxLength: 6 });
       campo.setAttribute("aria-label", "Percentual de " + x.nome + " sobre cada venda");
       campo.addEventListener("change", function () { if (!aplicar(M.definirPercentual(dados, x.id, campo.value), "Percentual de " + x.nome + " alterado para as próximas vendas.")) desenhar(); });
@@ -184,8 +187,35 @@
       tm.appendChild(tr);
     });
     if (!r.porMes.length) { var tr0 = el("tr"); tr0.appendChild(el("td", { colSpan: 5, className: "vazio", textContent: "Sem movimento ainda." })); tm.appendChild(tr0); }
+    giroEMargem(r);
     previa();
     prestacao();
+  }
+
+  /** Capital de giro, aviso da doação e margem das vendas. */
+  function giroEMargem(r) {
+    var campoGiro = document.getElementById("g-valor");
+    if (document.activeElement !== campoGiro) campoGiro.value = r.giro > 0 ? String(r.giro).replace(".", ",") : "";
+    texto("giro-texto", "Livre na conta: " + moeda(r.livre) + " · capital de giro: " + moeda(r.giro) + " · disponível para doar: " + moeda(r.disponivel) + ".");
+    texto("doar-aviso", r.giro > 0 ? "Disponível para doar sem mexer no capital de giro: " + moeda(r.disponivel) + "." : "Sem capital de giro definido: qualquer valor do saldo livre pode ser doado.");
+
+    var m = r.margem, ul = limpar("margem");
+    var linha = function (nomeL, valor, cl) { var li = el("li", { className: cl || "" }); li.appendChild(el("span", { textContent: nomeL })); li.appendChild(el("b", { textContent: valor })); ul.appendChild(li); };
+    linha("Vendas com custo informado", m.qtd + " de " + (m.qtd + m.semCusto));
+    linha("Recebido nessas vendas", moeda(m.receita));
+    linha("Custo", "− " + moeda(m.custo));
+    linha("Lucro", (m.lucro < 0 ? "− " : "") + moeda(Math.abs(m.lucro)), "total");
+    linha("Margem média", m.pct === null ? "–" : Math.round(m.pct * 100) + "%");
+    var t = "";
+    if (m.pct === null) t = "Informe o custo ao registrar as vendas para ver a margem.";
+    else {
+      t = "As reservas levam " + Math.round(m.pctReservas * 100) + "% de cada venda e a margem média é de " + Math.round(m.pct * 100) + "%. ";
+      t += m.sobraPct < 0 ? "⚠ As reservas consomem mais do que o lucro: o capital de giro vai diminuindo a cada venda. Reduza os percentuais ou aumente o preço."
+        : m.sobraPct < 0.1 ? "! Sobra só " + Math.round(m.sobraPct * 100) + "% da venda para repor o estoque e doar: pouca folga."
+        : "✓ Sobram cerca de " + Math.round(m.sobraPct * 100) + "% da venda para repor o estoque e doar.";
+      if (m.semCusto > 0) t += " " + m.semCusto + (m.semCusto === 1 ? " venda sem custo informado ficou" : " vendas sem custo informado ficaram") + " de fora.";
+    }
+    texto("margem-texto", t);
   }
 
   /** Campos do CDI, caixas "rende" e resultado da estimativa até a data escolhida. */
@@ -245,7 +275,7 @@
   document.getElementById("e-valor").addEventListener("input", previa);
   document.getElementById("f-venda").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    if (aplicar(M.adicionarEntrada(dados, { data: valorDe("e-data"), origem: valorDe("e-origem"), valor: valorDe("e-valor") }), "Venda registrada e dividida.")) { limparCampos(["e-origem", "e-valor"]); document.getElementById("e-valor").focus(); }
+    if (aplicar(M.adicionarEntrada(dados, { data: valorDe("e-data"), origem: valorDe("e-origem"), valor: valorDe("e-valor"), custo: valorDe("e-custo") }), "Venda registrada e dividida.")) { limparCampos(["e-origem", "e-valor", "e-custo"]); document.getElementById("e-valor").focus(); }
   });
   document.getElementById("f-retirada").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -261,7 +291,7 @@
   });
   document.getElementById("f-envio").addEventListener("submit", function (ev) {
     ev.preventDefault();
-    if (aplicar(M.adicionarEnvio(dados, { data: valorDe("v-data"), missaoId: valorDe("v-missao"), valor: valorDe("v-valor") }), "Doação registrada.")) limparCampos(["v-valor"]);
+    if (aplicar(M.adicionarEnvio(dados, { data: valorDe("v-data"), missaoId: valorDe("v-missao"), valor: valorDe("v-valor"), mesmoAssim: document.getElementById("v-mesmo").checked }), "Doação registrada.")) { limparCampos(["v-valor"]); document.getElementById("v-mesmo").checked = false; }
   });
   document.getElementById("f-ajuste").addEventListener("submit", function (ev) {
     ev.preventDefault();
@@ -286,6 +316,10 @@
     if (navigator.clipboard && navigator.clipboard.writeText) navigator.clipboard.writeText(t).then(pronto, alternativa); else alternativa();
   });
   document.getElementById("pc-imprimir").addEventListener("click", function () { window.print(); });
+  document.getElementById("f-giro").addEventListener("submit", function (ev) {
+    ev.preventDefault();
+    aplicar(M.definirGiro(dados, valorDe("g-valor")), "Capital de giro salvo.");
+  });
   document.getElementById("f-conf").addEventListener("submit", function (ev) {
     ev.preventDefault();
     var apagar = valorDe("c-valor").trim() === "";

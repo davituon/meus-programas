@@ -19,7 +19,7 @@
     return P.emReais(function () {
       var soma = 0, vermelho = 0, i, c;
       for (i = 0; i < 12; i++) { c = P.calcMes(Math.floor((base + i) / 12), (base + i) % 12 + 1); soma += c.sobra; if (c.sobra < 0) vermelho++; }
-      var S = P.serieAportes(), ap = P.aposentadoria.calcular(d.aposentadoria, S), ok = !(ap.erros && ap.erros.length);
+      var S = P.serieAportes(), ap = P.aposentadoria.calcular(d.aposentadoria), ok = !(ap.erros && ap.erros.length);
       return {
         sobra12: soma / 12, vermelho: vermelho, zera: S.primeiroZero || null,
         falta: ok ? ap.falta : null, pctMeta: ok ? ap.pctMeta : null, extra: ok ? ap.extra : null, necessario: ok ? ap.necessario : null

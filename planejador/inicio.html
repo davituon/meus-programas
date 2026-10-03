@@ -16,16 +16,25 @@
       <div>
         <h1>Planejador financeiro</h1>
         <nav class="paginas" aria-label="Páginas">
-          <a href="inicio.html" aria-current="page">Início</a>
-          <a href="index.html">Orçamento</a>
-          <a href="aportes.html">Aportes e consórcios</a>
-          <a href="carteira.html">Carteira</a>
-          <a href="cartao.html">Cartão de crédito</a>
-          <a href="patrimonio.html">Patrimônio</a>
-          <a href="aposentadoria.html">Aposentadoria</a>
-          <a href="conferencia.html">Conferência</a>
-          <a href="oportunidades.html">Oportunidades</a>
-          <a href="pagamentos.html">Pagamentos</a>
+          <div class="grupo-menu" role="group" aria-label="Dia a dia">
+            <span class="grupo-rotulo" aria-hidden="true">Dia a dia</span>
+            <a href="inicio.html" aria-current="page">Início</a>
+            <a href="index.html">Orçamento</a>
+            <a href="cartao.html">Cartão de crédito</a>
+            <a href="pagamentos.html">Pagamentos</a>
+          </div>
+          <div class="grupo-menu" role="group" aria-label="Planejar">
+            <span class="grupo-rotulo" aria-hidden="true">Planejar</span>
+            <a href="aportes.html">Aportes e consórcios</a>
+            <a href="carteira.html">Carteira</a>
+            <a href="patrimonio.html">Patrimônio</a>
+            <a href="aposentadoria.html">Aposentadoria</a>
+          </div>
+          <div class="grupo-menu" role="group" aria-label="Revisar">
+            <span class="grupo-rotulo" aria-hidden="true">Revisar</span>
+            <a href="conferencia.html">Conferência</a>
+            <a href="oportunidades.html">Oportunidades</a>
+          </div>
         </nav>
       </div>
       <div class="topo-acoes">
@@ -56,6 +65,19 @@
         <strong id="k-atencao">–</strong>
         <small id="k-atencao-det"></small>
       </article>
+    </section>
+
+    <section class="cartao passos" id="bloco-passos" aria-labelledby="t-passos" hidden>
+      <div class="cartao-topo"><h2 id="t-passos">Primeiros passos</h2><span class="dica" id="passos-progresso"></span></div>
+      <div class="barra-meta" id="passos-barra" role="img" aria-label=""><span id="passos-barra-preenche"></span></div>
+      <p class="nota">Cada área abaixo ainda tem os valores de exemplo. Preencha com os seus, ou, se o exemplo já está certo, marque "Já está certo" para tirá-la da lista.</p>
+      <ul id="passos" class="passos-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-saude">
+      <div class="cartao-topo"><h2 id="t-saude">Saúde financeira</h2><span class="dica">Próximos 12 meses, em reais de hoje</span></div>
+      <div id="saude" class="saude"></div>
+      <p class="nota">Limites de referência comuns (poupar 20% da renda, ter 6 meses de despesas guardados, parcelas até 30% da renda líquida). Servem de guia, não de regra: ajuste à sua realidade.</p>
     </section>
 
     <section class="cartao" aria-labelledby="t-meses">
@@ -108,6 +130,7 @@
   <script src="calculo-conferencia.js"></script>
   <script src="calculo-oportunidades.js"></script>
   <script src="calculo-pagamentos.js"></script>
+  <script src="calculo-indicadores.js"></script>
   <script src="inicio.js"></script>
 </body>
 </html>

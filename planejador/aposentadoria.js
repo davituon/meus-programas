@@ -46,7 +46,10 @@
       campo("Planejar até os", "ate_idade", { passo: "1", sufixo: "anos", inteiro: true }),
       campo("Gasto mensal na aposentadoria", "gasto", { moeda: true, prefixo: "R$" }),
       campo("INSS por mês", "inss", { moeda: true, prefixo: "R$" }),
-      campo("Retorno real ao ano", "retorno", { passo: "0.5", sufixo: "%" })
+      campo("Retorno real ao ano", "retorno", { passo: "0.5", sufixo: "%" }),
+      campo("Imposto médio sobre o resgate", "imposto", { passo: "1", sufixo: "%" }),
+      campo("Custos (taxas) ao ano", "custo", { passo: "0.1", sufixo: "% a.a." }),
+      campo("Variação dos cenários", "var_cenarios", { passo: "0.5", sufixo: "pontos" })
     );
     var cb = document.getElementById("ap-consorcios");
     cb.checked = !!ap().consorcios;
@@ -153,6 +156,49 @@
     });
   }
 
+  function pctTexto(v) { return Math.round(v * 100) + "%"; }
+  function retornoTexto(v) { return (Math.round(v * 10) / 10).toString().replace(".", ",") + "%"; }
+
+  var temporizadorCenarios = null;
+
+  function desenharCenarios() {
+    var cs = A.cenarios(ap()), t = limpar("tabela-cenarios");
+    if (cs.erros.length) return;
+    var cols = [["Pessimista", cs.pessimista, "−" + String(cs.variacao).replace(".", ",") + " pontos"], ["Base", cs.base, "premissas atuais"], ["Otimista", cs.otimista, "+" + String(cs.variacao).replace(".", ",") + " pontos"]];
+    var cab = el("tr");
+    cab.appendChild(el("th", { textContent: "", scope: "col" }));
+    cols.forEach(function (c) { var th = el("th", { scope: "col" }); th.appendChild(document.createTextNode(c[0])); th.appendChild(el("small", { textContent: c[2] })); cab.appendChild(th); });
+    t.appendChild(el("thead")).appendChild(cab);
+    var corpo = el("tbody");
+    function linha(rotulo, fn, forte) {
+      var tr = el("tr", { className: forte ? "destaque-linha" : "" });
+      tr.appendChild(el("th", { textContent: rotulo, scope: "row" }));
+      cols.forEach(function (c) { tr.appendChild(el("td", { textContent: fn(c[1]) })); });
+      corpo.appendChild(tr);
+    }
+    linha("Retorno da corretora (nominal/ano)", function (c) { return retornoTexto(c.retornoXP); });
+    linha("Retorno da previdência (nominal/ano)", function (c) { return retornoTexto(c.retornoPrev); });
+    linha("Retorno real na aposentadoria", function (c) { return retornoTexto(c.retornoReal); });
+    linha("Patrimônio projetado", function (c) { return comSinal(c.patrimonio); });
+    linha("Capital necessário", function (c) { return moeda(c.necessario); });
+    linha("Meta atingida", function (c) { return pctTexto(c.pctMeta); }, true);
+    linha("Falta", function (c) { return c.falta > 0 ? moeda(c.falta) : "–"; });
+    linha("Aporte extra por mês", function (c) { return c.extra > 0 ? moeda(c.extra) : "ok"; });
+    linha("O patrimônio dura", function (c) { return c.acabaAos === null ? "até os " + ap().ate_idade + " anos" : "até os " + c.acabaAos + " anos"; });
+    t.appendChild(corpo);
+
+    var p = cs.pessimista, o = cs.otimista;
+    var inicio = "No cenário pessimista a meta cobre " + pctTexto(p.pctMeta) + " e o aporte extra sobe para " + (p.extra > 0 ? moeda(p.extra) : "nada") + " por mês; no otimista cobre " + pctTexto(o.pctMeta) + ".";
+    texto("texto-cenarios", inicio);
+    // a busca do retorno que fecha o plano é mais pesada: espera a pessoa parar de digitar
+    clearTimeout(temporizadorCenarios);
+    temporizadorCenarios = setTimeout(function () {
+      var fechar = A.retornoParaFechar(ap());
+      texto("texto-cenarios", inicio
+      + (fechar === null ? " Nem 15 pontos a mais de retorno fecham o plano sem aporte extra." : fechar === 0 ? " Com as premissas atuais o plano já fecha sem aporte extra." : " Para fechar o plano sem aporte extra seria preciso cerca de " + (Math.round(fechar * 10) / 10).toString().replace(".", ",") + " pontos a mais de retorno em todas as contas, o que costuma exigir mais risco."));
+    }, 400);
+  }
+
   function atualizar() {
     var erros = A.validar(ap()), area = document.getElementById("resultado"), alerta = document.getElementById("erros");
     var r = erros.length ? { erros: erros } : A.calcular(ap());
@@ -181,6 +227,8 @@
     texto("texto-veredito", "Aposentando aos " + ap().aposentar + " anos (" + data + ") com " + moeda(ap().gasto) + " por mês, o patrimônio projetado cobre " + Math.round(r.pctMeta * 100) + "% do capital necessário"
       + (c.acabaAos !== null ? " e acaba aos " + c.acabaAos + " anos." : " e dura até os " + ap().ate_idade + " anos.")
       + (ok ? " A meta está coberta." : " Faltam " + moeda(r.falta) + ", o que equivale a " + moeda(r.extra) + " por mês de aporte extra até lá."));
+    var semCustos = !(Number(ap().imposto) > 0) && !(Number(ap().custo) > 0);
+    document.getElementById("aviso-bruto").hidden = !semCustos;
     texto("nota-veredito", gasto === null ? "Nem sem gastar nada o patrimônio projetado cobre as retiradas desse período." : "Com esse patrimônio, o gasto mensal máximo que fecha a conta é de " + moeda(gasto) + " (hoje o planejado é " + moeda(ap().gasto) + ").");
     var barra = document.getElementById("barra-meta");
     document.getElementById("barra-meta-preenche").style.width = Math.max(0, Math.min(100, r.pctMeta * 100)) + "%";
@@ -200,10 +248,12 @@
     cp.append(
       linhaLista("Corretora XP", moeda(r.xp)),
       linhaLista("Previdência privada", moeda(r.prev)),
+      linhaLista("(−) Imposto estimado no resgate (" + (Number(ap().imposto) || 0) + "%)", r.imposto > 0 ? "− " + moeda(r.imposto) : moeda(0)),
       linhaLista("(−) Déficit do orçamento até lá", r.deficit > 0 ? "− " + moeda(r.deficit) : moeda(0)),
       linhaLista("Patrimônio projetado", comSinal(r.patrimonio), "total")
     );
     tabelaIdades(r);
+    desenharCenarios();
     desenharSugestoes(r, gasto);
   }
 
