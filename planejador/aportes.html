@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Aportes e Consórcios</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html" aria-current="page">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+        <div class="seletor-mes">
+          <span id="rotulo-mes">Mês analisado</span>
+          <select id="sel-mes" aria-labelledby="rotulo-mes"></select>
+          <select id="sel-ano" aria-label="Ano analisado"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo dos aportes" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo" id="rot-aporte">Aporte do mês</span>
+        <strong id="k-aporte">R$ 0,00</strong>
+        <small id="k-aporte-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Corretora XP</span>
+        <strong id="k-xp">R$ 0,00</strong>
+        <small id="k-xp-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Previdência privada</span>
+        <strong id="k-prev">R$ 0,00</strong>
+        <small id="k-prev-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Consórcio pago</span>
+        <strong id="k-cons">R$ 0,00</strong>
+        <small id="k-cons-det"></small>
+      </article>
+    </section>
+
+    <div id="alerta" class="alerta" role="alert" hidden></div>
+
+    <div class="modo-linha">
+      <label class="modo">Mostrar valores
+        <select id="sel-modo" aria-label="Tipo de valor mostrado">
+          <option value="real">Em reais de hoje</option>
+          <option value="nominal">Nominais (com reajuste)</option>
+        </select>
+      </label>
+      <span id="nota-modo" class="dica"></span>
+    </div>
+
+    <section class="cartao" aria-labelledby="t-formacao">
+      <div class="cartao-topo"><h2 id="t-formacao">Como o aporte do mês é formado</h2></div>
+      <div class="duas">
+        <div>
+          <h3 class="sub">Para a corretora XP</h3>
+          <ul id="form-xp" class="composicao"></ul>
+        </div>
+        <div>
+          <h3 class="sub">Para a previdência</h3>
+          <ul id="form-prev" class="composicao"></ul>
+        </div>
+      </div>
+      <p class="nota" id="nota-formacao"></p>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-contas">
+      <div class="cartao-topo"><h2 id="t-contas">Suas contas de investimento</h2></div>
+      <div class="duas">
+        <div>
+          <h3 class="sub">Corretora XP</h3>
+          <div id="campos-xp" class="campos"></div>
+        </div>
+        <div>
+          <h3 class="sub">Previdência privada</h3>
+          <div id="campos-prev" class="campos"></div>
+        </div>
+      </div>
+      <p class="nota" id="nota-retorno"></p>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-evolucao">
+      <div class="cartao-topo">
+        <h2 id="t-evolucao">Patrimônio investido ao longo dos anos</h2>
+        <span class="dica">Saldo no fim de cada ano · passe o mouse nas colunas</span>
+      </div>
+      <div id="evolucao" class="evolucao" role="img" aria-label=""></div>
+      <ul id="legenda-evolucao" class="legenda"></ul>
+    </section>
+
+    <section class="cartao mensal" aria-labelledby="t-mensal">
+      <div class="cartao-topo">
+        <h2 id="t-mensal">Mês a mês</h2>
+        <span class="dica">Clique em um mês para analisá-lo</span>
+      </div>
+      <div class="tabela-rolagem"><table id="tabela-aportes" class="tabela"></table></div>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-cotas">
+      <div class="cartao-topo">
+        <h2 id="t-cotas">Cotas de consórcio</h2>
+        <span class="selo" id="selo-cotas"></span>
+      </div>
+      <p class="nota">As parcelas e os prazos vêm da lista de Despesas (página Orçamento). Aqui você informa a carta, o que já foi pago antes de out/2026 e quando a cota foi (ou será) contemplada. O total pago soma mês a mês até a contemplação; depois dela, as parcelas continuam sendo pagas e aparecem no "pago no total".</p>
+      <div id="cotas" class="cotas"></div>
+      <div id="resumo-cotas" class="resumo-cotas"></div>
+      <div class="add-cota">
+        <label class="inline">Marcar uma despesa como cota
+          <select id="sel-nova-cota" aria-label="Despesa a marcar como cota de consórcio"></select>
+        </label>
+        <button type="button" class="secundario" id="btn-nova-cota">Adicionar cota</button>
+      </div>
+    </section>
+
+    <section class="cartao mensal" aria-labelledby="t-cons-mes">
+      <div class="cartao-topo">
+        <h2 id="t-cons-mes">Consórcio pago, somando mês a mês até a contemplação</h2>
+      </div>
+      <div class="tabela-rolagem"><table id="tabela-cotas" class="tabela"></table></div>
+    </section>
+
+    <p class="aviso">As projeções supõem retorno constante e aportes no fim de cada mês. O retorno informado é nominal; em "reais de hoje" o programa desconta a inflação. Simulação sobre os dados informados, não é recomendação de investimento.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="aportes.js"></script>
+</body>
+</html>

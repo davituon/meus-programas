@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Pagamentos</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html" aria-current="page">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+        <div class="seletor-mes">
+          <span id="rotulo-mes">Mês analisado</span>
+          <select id="sel-mes" aria-labelledby="rotulo-mes"></select>
+          <select id="sel-ano" aria-label="Ano analisado"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo dos pagamentos do mês" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo">Total a pagar no mês</span>
+        <strong id="k-total">–</strong>
+        <small id="k-total-det"></small>
+      </article>
+      <article class="kpi resultado positivo">
+        <span class="kpi-rotulo">Já pago</span>
+        <strong id="k-pago">–</strong>
+        <small id="k-pago-det"></small>
+      </article>
+      <article class="kpi resultado" id="caixa-pendente">
+        <span class="kpi-rotulo">Pendente</span>
+        <strong id="k-pendente">–</strong>
+        <small id="k-pendente-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Andamento</span>
+        <strong id="k-pct">–</strong>
+        <small>do valor do mês já pago</small>
+      </article>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-contas">
+      <div class="cartao-topo">
+        <h2 id="t-contas">Contas do mês</h2>
+        <button type="button" id="marcar-todas" class="botao-sec">Marcar todas como pagas hoje</button>
+      </div>
+      <p class="nota">Informe o dia de vencimento de cada conta para ver o que está atrasado ou vence nos próximos 7 dias. Marque cada conta quando pagar e ajuste a data se o pagamento foi em outro dia. Os pagamentos ficam salvos por mês, entram no backup e podem ser desfeitos a qualquer momento. As despesas e as faturas vêm do Orçamento e da página Cartão de crédito. Se você renomear uma despesa, ela volta a aparecer como pendente.</p>
+      <p id="pg-aviso" class="pg-aviso" role="status" hidden></p>
+      <div class="pg-filtros" role="group" aria-label="Filtrar contas">
+        <button type="button" data-filtro="todas" aria-pressed="true">Todas</button>
+        <button type="button" data-filtro="pendentes" aria-pressed="false">Pendentes</button>
+        <button type="button" data-filtro="pagas" aria-pressed="false">Pagas</button>
+      </div>
+      <div class="pg-barra" aria-hidden="true"><span id="pg-barra-pago"></span></div>
+      <ul id="contas" class="pg-lista"></ul>
+    </section>
+
+    <p class="aviso">Controle de organização pessoal: não consulta bancos nem confirma pagamentos reais.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="calculo-pagamentos.js"></script>
+  <script src="pagamentos.js"></script>
+</body>
+</html>

@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Aposentadoria</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html" aria-current="page">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo da aposentadoria" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo" id="rot-necessario">Capital necessário</span>
+        <strong id="k-necessario">–</strong>
+        <small id="k-necessario-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Patrimônio projetado</span>
+        <strong id="k-patrimonio">–</strong>
+        <small id="k-patrimonio-det"></small>
+      </article>
+      <article class="kpi" id="caixa-meta">
+        <span class="kpi-rotulo">Meta atingida</span>
+        <strong id="k-meta">–</strong>
+        <small id="k-meta-det"></small>
+      </article>
+      <article class="kpi resultado" id="caixa-extra">
+        <span class="kpi-rotulo">Aporte extra necessário</span>
+        <strong id="k-extra">–</strong>
+        <small id="k-extra-det"></small>
+      </article>
+    </section>
+
+    <div id="erros" class="alerta" role="alert" hidden></div>
+
+    <div id="resultado">
+      <section class="cartao veredito" aria-labelledby="t-veredito">
+        <div class="cartao-topo"><h2 id="t-veredito">Em resumo</h2></div>
+        <p id="texto-veredito" class="lead"></p>
+        <div class="barra-meta" id="barra-meta" role="img" aria-label=""><span id="barra-meta-preenche"></span></div>
+        <p class="nota" id="nota-veredito"></p>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-vida">
+        <div class="cartao-topo">
+          <h2 id="t-vida">Seu patrimônio ao longo da vida</h2>
+          <span class="dica">Passe o mouse nos pontos · reais de hoje</span>
+        </div>
+        <div id="grafico" class="grafico-vida"></div>
+        <ul id="legenda-vida" class="legenda"></ul>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-composicao">
+        <div class="cartao-topo"><h2 id="t-composicao">De onde vêm os números</h2></div>
+        <div class="duas">
+          <div>
+            <h3 class="sub" id="sub-necessario">Capital necessário</h3>
+            <ul id="comp-necessario" class="composicao"></ul>
+          </div>
+          <div>
+            <h3 class="sub">Patrimônio projetado</h3>
+            <ul id="comp-patrimonio" class="composicao"></ul>
+          </div>
+        </div>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-idades">
+        <div class="cartao-topo">
+          <h2 id="t-idades">Se aposentar em outra idade</h2>
+          <span class="dica">A linha em destaque é a idade escolhida</span>
+        </div>
+        <div class="tabela-rolagem"><table id="tabela-idades" class="tabela tabela-simples"></table></div>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-sugestoes">
+        <div class="cartao-topo"><h2 id="t-sugestoes">O que pode melhorar o plano</h2></div>
+        <p class="nota">Cada mudança é testada sozinha, sobre as suas premissas atuais.</p>
+        <div id="sugestoes" class="grade-sugestoes"></div>
+      </section>
+    </div>
+
+    <section class="cartao" aria-labelledby="t-premissas">
+      <div class="cartao-topo"><h2 id="t-premissas">Premissas da aposentadoria</h2></div>
+      <div id="campos-aposentadoria" class="campos"></div>
+      <label class="check check-consorcio"><input type="checkbox" id="ap-consorcios"> <span>Incluir as parcelas de consórcio que ainda estiverem sendo pagas depois de aposentar</span></label>
+      <p class="nota">Gasto e INSS em reais de hoje. O retorno é real (acima da inflação) e vale só para a fase da aposentadoria; durante o acúmulo valem os retornos da página Aportes. O patrimônio vem da série mês a mês de Aportes (corretora XP + previdência), descontado o déficit do orçamento, se houver.</p>
+    </section>
+
+    <p class="aviso">Tudo é calculado em reais de hoje, qualquer que seja a escolha de valores nas outras páginas. Não considera impostos sobre resgates, custos de saúde que cresçam acima da inflação, nem mudanças nas regras do INSS. Simulação e organização pessoal, não é recomendação de investimento.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="calculo-aposentadoria.js"></script>
+  <script src="aposentadoria.js"></script>
+</body>
+</html>

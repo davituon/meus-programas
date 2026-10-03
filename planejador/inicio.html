@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Início</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html" aria-current="page">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo geral" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo">Patrimônio líquido hoje</span>
+        <strong id="k-patrimonio">–</strong>
+        <small id="k-patrimonio-det"></small>
+      </article>
+      <article class="kpi resultado" id="caixa-mes">
+        <span class="kpi-rotulo" id="k-mes-rotulo">Resultado do mês</span>
+        <strong id="k-mes">–</strong>
+        <small id="k-mes-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Meta da aposentadoria</span>
+        <strong id="k-meta">–</strong>
+        <small id="k-meta-det"></small>
+      </article>
+      <article class="kpi resultado" id="caixa-atencao">
+        <span class="kpi-rotulo">Pontos de atenção</span>
+        <strong id="k-atencao">–</strong>
+        <small id="k-atencao-det"></small>
+      </article>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-meses">
+      <div class="cartao-topo">
+        <h2 id="t-meses">Resultado mês a mês</h2>
+        <div class="ini-anos">
+          <button type="button" id="ano-ant" aria-label="Ano anterior">‹</button>
+          <strong id="ano-rotulo">–</strong>
+          <button type="button" id="ano-prox" aria-label="Próximo ano">›</button>
+        </div>
+      </div>
+      <p class="nota">Clique em um mês para ver de onde vem o resultado. Barras para a direita: sobra; para a esquerda, com sinal de menos: falta.</p>
+      <div id="meses" class="ini-meses" role="group" aria-label="Meses do ano"></div>
+      <h3 id="detalhe-titulo" class="ini-subtitulo">–</h3>
+      <ul id="detalhe" class="composicao"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-sim">
+      <div class="cartao-topo"><h2 id="t-sim">E se...? Simulação rápida</h2><span class="dica">Não altera os seus dados</span></div>
+      <div class="ini-sim">
+        <label for="sim-renda">Renda extra por mês: <b id="sim-renda-v">–</b></label>
+        <input type="range" id="sim-renda" min="0" max="3000" step="100" value="0">
+        <label for="sim-corte">Corte nas despesas (sem consórcio): <b id="sim-corte-v">–</b></label>
+        <input type="range" id="sim-corte" min="0" max="30" step="1" value="0">
+      </div>
+      <div id="sim-resultado" class="opo-efeitos" aria-live="polite"></div>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-opo">
+      <div class="cartao-topo"><h2 id="t-opo">Maiores oportunidades</h2><a class="conf-ir" href="oportunidades.html">Ver todas →</a></div>
+      <ul id="opo" class="opo-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-aten">
+      <div class="cartao-topo"><h2 id="t-aten">O que conferir primeiro</h2><a class="conf-ir" href="conferencia.html">Abrir Conferência →</a></div>
+      <ul id="atencao" class="conf-lista"></ul>
+    </section>
+
+    <section aria-labelledby="t-atalhos">
+      <h2 id="t-atalhos" class="oculto-visual">Atalhos</h2>
+      <div id="atalhos" class="ini-atalhos"></div>
+    </section>
+
+    <p class="aviso">Resumo calculado no seu navegador com os dados cadastrados. Organização pessoal, não é recomendação de investimento.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="calculo-aposentadoria.js"></script>
+  <script src="calculo-conferencia.js"></script>
+  <script src="calculo-oportunidades.js"></script>
+  <script src="calculo-pagamentos.js"></script>
+  <script src="inicio.js"></script>
+</body>
+</html>

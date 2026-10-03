@@ -1,0 +1,116 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Patrimônio</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html" aria-current="page">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo do patrimônio" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo">Patrimônio líquido</span>
+        <strong id="k-liquido">–</strong>
+        <small id="k-liquido-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Investimentos financeiros</span>
+        <strong id="k-financeiro">–</strong>
+        <small id="k-financeiro-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Bens e consórcios pagos</span>
+        <strong id="k-bens">–</strong>
+        <small id="k-bens-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Dívidas</span>
+        <strong id="k-dividas">–</strong>
+        <small id="k-dividas-det"></small>
+      </article>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-composicao">
+      <div class="cartao-topo">
+        <h2 id="t-composicao">Como o patrimônio se divide</h2>
+        <span class="dica">Parte de cada item nos bens e direitos, antes das dívidas</span>
+      </div>
+      <div id="barra-patrimonio" class="barra-classes" role="img" aria-label=""></div>
+      <ul id="legenda-patrimonio" class="legenda-classes"></ul>
+      <p class="nota" id="nota-composicao"></p>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-invest">
+      <div class="cartao-topo"><h2 id="t-invest">Investimentos e consórcios</h2></div>
+      <p class="nota">Estes valores são os mesmos da página Aportes e consórcios: mudar aqui muda lá, e vice-versa. Saldos de hoje (out/2026).</p>
+      <div class="campos" id="campos-invest"></div>
+      <p class="nota" id="nota-carteira"></p>
+      <h3 class="sub" style="margin-top:18px">Cotas de consórcio: quanto já foi pago</h3>
+      <div class="campos" id="campos-cotas"></div>
+      <p class="nota">A carta de crédito <strong>não</strong> entra no patrimônio: só o que você já pagou. A carta só vira bem quando a cota é contemplada e usada. As parcelas pagas a partir de out/2026 são acompanhadas na página Aportes e consórcios.</p>
+    </section>
+
+    <div class="colunas-pat">
+      <section class="cartao" aria-labelledby="t-bens">
+        <div class="cartao-topo">
+          <h2 id="t-bens">Bens</h2>
+          <span class="selo" id="selo-bens"></span>
+        </div>
+        <p class="nota">Apartamento, carro e outros bens, pelo valor de mercado de hoje (o quanto você conseguiria vender). O valor do apartamento veio do cadastro anterior (venda prevista): confira e atualize.</p>
+        <div class="linhas" data-lista="bens"></div>
+        <button type="button" class="adicionar" id="add-bem">+ Adicionar bem</button>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-dividas">
+        <div class="cartao-topo">
+          <h2 id="t-dividas">Dívidas</h2>
+          <span class="selo sai" id="selo-dividas"></span>
+        </div>
+        <p class="nota">Saldo devedor de financiamentos (apartamento, carro), empréstimos e outras dívidas. O valor é descontado do patrimônio. Não inclua aqui a fatura do cartão que entra no orçamento mensal.</p>
+        <div class="linhas" data-lista="dividas"></div>
+        <button type="button" class="adicionar" id="add-divida">+ Adicionar dívida</button>
+      </section>
+    </div>
+
+    <section class="cartao" aria-labelledby="t-conta">
+      <div class="cartao-topo"><h2 id="t-conta">A conta, linha a linha</h2></div>
+      <ul id="conta" class="composicao"></ul>
+      <p class="nota">Na página Aposentadoria só entram os <strong>investimentos financeiros</strong> (corretora XP e previdência): imóveis, carros e consórcios não são considerados para pagar a aposentadoria.</p>
+    </section>
+
+    <p class="aviso">Valores de hoje, informados por você; nada é atualizado sozinho. Bens e dívidas não rendem nem se valorizam nesta página. Organização pessoal, não é avaliação de bens nem recomendação de investimento.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="patrimonio.js"></script>
+</body>
+</html>

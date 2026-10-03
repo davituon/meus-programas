@@ -1,0 +1,124 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Cartão de crédito</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html" aria-current="page">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+        <div class="seletor-mes">
+          <span id="rotulo-mes">Mês analisado</span>
+          <select id="sel-mes" aria-labelledby="rotulo-mes"></select>
+          <select id="sel-ano" aria-label="Ano analisado"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo do cartão" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo" id="rot-fatura">Fatura do mês</span>
+        <strong id="k-fatura">R$ 0,00</strong>
+        <small id="k-fatura-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Ainda a pagar em parcelas</span>
+        <strong id="k-futuro">R$ 0,00</strong>
+        <small id="k-futuro-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Média dos próximos 12 meses</span>
+        <strong id="k-media">R$ 0,00</strong>
+        <small>inclui as assinaturas e compras recorrentes</small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Tamanho frente às despesas</span>
+        <strong id="k-peso">–</strong>
+        <small id="k-peso-det"></small>
+      </article>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-faixa">
+      <div class="cartao-topo">
+        <h2 id="t-faixa">Fatura de cada cartão</h2>
+        <label class="modo">Mostrar nos quadros, no gráfico e na tabela
+          <select id="sel-cartao" aria-label="Cartão exibido"></select>
+        </label>
+      </div>
+      <div id="faixa" class="faixa-cartoes"></div>
+    </section>
+
+    <section class="cartao integra" aria-labelledby="t-integra">
+      <label class="check integra-check"><input type="checkbox" id="somar"> <span id="t-integra">Somar as faturas às despesas do orçamento</span></label>
+      <p class="nota" id="integra-nota"></p>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-evolucao">
+      <div class="cartao-topo">
+        <h2 id="t-evolucao">Fatura prevista, mês a mês</h2>
+        <span class="dica" id="dica-evolucao">Próximos 24 meses a partir do mês analisado · passe o mouse nas colunas</span>
+      </div>
+      <div id="evolucao" class="evolucao evolucao-mensal" role="img" aria-label=""></div>
+      <ul id="legenda-evolucao" class="legenda"></ul>
+    </section>
+
+    <section class="cartao mensal" aria-labelledby="t-mensal">
+      <div class="cartao-topo">
+        <h2 id="t-mensal">Fatura por categoria</h2>
+        <span class="dica">Clique em um mês para analisá-lo</span>
+      </div>
+      <div class="tabela-rolagem"><table id="tabela-cartao" class="tabela"></table></div>
+    </section>
+
+    <section class="cartao mensal" aria-labelledby="t-por-cartao">
+      <div class="cartao-topo">
+        <h2 id="t-por-cartao">Fatura por cartão, mês a mês</h2>
+        <span class="dica">Sempre mostra os quatro cartões</span>
+      </div>
+      <div class="tabela-rolagem"><table id="tabela-por-cartao" class="tabela"></table></div>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-compras">
+      <div class="cartao-topo">
+        <h2 id="t-compras">Compras e assinaturas, por cartão</h2>
+        <span class="selo sai" id="selo-compras"></span>
+      </div>
+      <p class="nota">Cadastre cada compra uma vez, no cartão em que ela foi feita: o programa monta a fatura de todos os meses. <strong>À vista</strong> cai no mês da compra; <strong>parcelado</strong> divide o valor total pelo número de parcelas a partir do mês informado (para uma compra que já está em andamento, informe a data da 1ª parcela original); <strong>todo mês</strong> serve para assinaturas e gastos fixos no cartão, e o valor informado é o de cada mês. Compras sem parcela neste mês aparecem apagadas. Você pode renomear os cartões nos campos abaixo.</p>
+      <div id="compras" class="cartoes-blocos"></div>
+      <div class="add-linha"><button type="button" class="secundario" id="btn-exemplos" hidden>Adicionar exemplos para ver como fica</button></div>
+      <datalist id="categorias"></datalist>
+    </section>
+
+    <p class="aviso">Os valores são os da fatura, em reais nominais: parcelas e compras à vista são fixas, e o que se repete todo mês sobe a cada janeiro pelo reajuste das despesas (valor informado = valor de hoje). Na página Orçamento esses valores aparecem em reais de hoje ou nominais, conforme a sua escolha. Juros, anuidade, encargos, limite e datas de fechamento e vencimento não são calculados: a fatura de cada mês considera o mês da compra ou da parcela. Simulação e organização pessoal.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="cartao.js"></script>
+</body>
+</html>

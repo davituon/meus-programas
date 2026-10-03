@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Receitas e Despesas</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html" aria-current="page">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+        <div class="seletor-mes">
+          <span id="rotulo-mes">Mês analisado</span>
+          <select id="sel-mes" aria-labelledby="rotulo-mes"></select>
+          <select id="sel-ano" aria-label="Ano analisado"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo do mês" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo">Receita total</span>
+        <strong id="total-receitas">R$ 0,00</strong>
+        <small id="detalhe-receitas">tudo que entra no mês</small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Receita líquida</span>
+        <strong id="total-liquida">R$ 0,00</strong>
+        <small id="detalhe-liquida">após folha e reservas</small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Despesas</span>
+        <strong id="total-despesas">R$ 0,00</strong>
+        <small id="detalhe-despesas"></small>
+      </article>
+      <article class="kpi resultado" id="caixa-sobra">
+        <span class="kpi-rotulo" id="rotulo-sobra">Sobra por mês</span>
+        <strong id="total-sobra">R$ 0,00</strong>
+        <small id="total-ano"></small>
+      </article>
+    </section>
+
+    <section class="cartao fluxo" aria-labelledby="titulo-fluxo">
+      <div class="cartao-topo"><h2 id="titulo-fluxo">Para onde vai a receita</h2></div>
+      <div id="barra" class="barra" role="img" aria-label=""></div>
+      <ul id="legenda" class="legenda"></ul>
+      <p id="barra-nota" class="nota"></p>
+    </section>
+
+    <section class="cartao mensal" aria-labelledby="titulo-mensal">
+      <div class="cartao-topo">
+        <h2 id="titulo-mensal">Mês a mês</h2>
+        <span class="dica">Clique em um mês para analisá-lo</span>
+      </div>
+      <div class="tabela-rolagem"><table id="tabela-mensal" class="tabela"></table></div>
+    </section>
+
+    <section class="cartao reajustes" aria-labelledby="titulo-reajustes">
+      <div class="cartao-topo">
+        <h2 id="titulo-reajustes">Reajustes ao longo dos anos</h2>
+        <label class="modo">Mostrar valores
+          <select id="sel-modo" aria-label="Tipo de valor mostrado">
+            <option value="real">Em reais de hoje</option>
+            <option value="nominal">Nominais (com reajuste)</option>
+          </select>
+        </label>
+      </div>
+      <div id="campos-reajuste" class="campos-reajuste"></div>
+      <p class="nota">Cada janeiro os valores sobem pelo reajuste de seu grupo (despesas podem ter um percentual próprio). As listas abaixo mostram os valores de hoje (2026); os quadros, o gráfico e a tabela já aplicam os reajustes até o mês analisado. "Em reais de hoje" desconta a inflação, para você comparar o poder de compra.</p>
+    </section>
+
+    <div class="colunas">
+      <div class="coluna">
+        <h2 class="grupo"><span class="ponto entra"></span>O que entra</h2>
+
+        <section class="cartao" id="receitas" aria-labelledby="t-receitas">
+          <div class="cartao-topo">
+            <h3 id="t-receitas">Receitas</h3>
+            <span class="selo" id="selo-receitas"></span>
+          </div>
+          <div class="linhas" data-lista="receitas"></div>
+          <button type="button" class="adicionar" data-add="receitas">+ Adicionar receita</button>
+        </section>
+
+        <section class="cartao" id="extras" aria-labelledby="t-extras">
+          <div class="cartao-topo">
+            <h3 id="t-extras">Receitas extras</h3>
+            <span class="selo" id="selo-extras"></span>
+          </div>
+          <p class="nota">Valores que se repetem todo mês (sobreaviso, horas extras…). Somam à receita total.</p>
+          <div class="linhas" data-lista="extras"></div>
+          <button type="button" class="adicionar" data-add="extras">+ Adicionar receita extra</button>
+        </section>
+
+        <section class="cartao" id="unicas" aria-labelledby="t-unicas">
+          <div class="cartao-topo">
+            <h3 id="t-unicas">Receitas de um mês só</h3>
+            <span class="selo" id="selo-unicas"></span>
+          </div>
+          <p class="nota">13º, PPR, saque aniversário: entram uma vez por ano, no mês escolhido. O selo mostra o mês analisado.</p>
+          <div class="linhas" data-lista="unicas"></div>
+          <button type="button" class="adicionar" data-add="unicas">+ Adicionar receita de um mês só</button>
+        </section>
+
+        <section class="cartao" id="folha" aria-labelledby="t-folha">
+          <div class="cartao-topo">
+            <h3 id="t-folha">Descontos em folha de pagamento</h3>
+            <span class="selo sai" id="selo-folha"></span>
+          </div>
+          <p class="nota">Impostos e descontos tirados do salário antes de você receber.</p>
+          <div class="linhas" data-lista="folha"></div>
+          <button type="button" class="adicionar" data-add="folha">+ Adicionar desconto</button>
+        </section>
+
+        <section class="cartao" id="reservas" aria-labelledby="t-reservas">
+          <div class="cartao-topo">
+            <h3 id="t-reservas">Reservas sobre a receita total</h3>
+            <span class="selo sai" id="selo-reservas"></span>
+          </div>
+          <p class="nota">Percentuais calculados sobre a receita total do mês. As marcadas "No aporte" contam como dinheiro investido (veja a página Aportes).</p>
+          <div class="linhas" data-lista="reservas"></div>
+          <div class="total-linha"><span>Reservas que vão para o aporte</span><strong id="aporte-card">R$ 0,00</strong></div>
+          <div class="total-linha destaque"><span>Receita líquida (após folha e reservas)</span><strong id="liquida-card">R$ 0,00</strong></div>
+        </section>
+      </div>
+
+      <div class="coluna">
+        <h2 class="grupo"><span class="ponto sai"></span>O que sai</h2>
+
+        <section class="cartao" id="despesas" aria-labelledby="t-despesas">
+          <div class="cartao-topo">
+            <h3 id="t-despesas">Despesas</h3>
+            <span class="selo sai" id="selo-despesas"></span>
+          </div>
+          <p class="nota">Preencha "Até" quando o item termina (consórcio, parcela). Itens já encerrados no mês analisado ficam apagados e não contam.</p>
+          <div class="linhas" data-lista="despesas"></div>
+          <button type="button" class="adicionar" data-add="despesas">+ Adicionar despesa</button>
+
+          <div class="cartoes-resumo" id="cartoes-resumo">
+            <div class="cartoes-topo"><strong id="cr-titulo">Cartões de crédito</strong><span class="selo sai" id="cr-selo"></span></div>
+            <ul id="cr-lista" class="composicao"></ul>
+            <label class="check cr-check"><input type="checkbox" id="cr-somar"> <span>Somar as faturas dos cartões às despesas</span></label>
+            <p class="nota" id="cr-nota"></p>
+            <div class="total-linha destaque-ruim"><span>Total de despesas (lista + cartões)</span><strong id="cr-total"></strong></div>
+            <a class="link-pagina" href="cartao.html">Cadastrar e editar as compras dos cartões →</a>
+          </div>
+        </section>
+
+        <section class="cartao" id="reembolsos" aria-labelledby="t-reembolsos">
+          <div class="cartao-topo">
+            <h3 id="t-reembolsos">Reembolsos</h3>
+            <span class="selo" id="selo-reembolsos"></span>
+          </div>
+          <p class="nota">Gastos que você recebe de volta. Abatem das despesas e não entram na base das reservas. A agenda cai em degraus, cada um com seu "Até".</p>
+          <div class="linhas" data-lista="reembolsos"></div>
+          <button type="button" class="adicionar" data-add="reembolsos">+ Adicionar reembolso</button>
+        </section>
+      </div>
+    </div>
+
+    <p class="aviso">Ainda não entram aqui: imposto sobre o 13º e o PPR (a folha é a mesma em todos os meses) e o cálculo da aposentadoria. Vamos incluir passo a passo.</p>
+
+    <div class="rodape">
+      <button type="button" class="secundario" id="limpar">Limpar tudo</button>
+      <button type="button" class="secundario" id="restaurar">Restaurar exemplo</button>
+    </div>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

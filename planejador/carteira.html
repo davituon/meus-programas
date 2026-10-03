@@ -1,0 +1,118 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Planejador - Carteira</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(18,53,91)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Planejador financeiro</h1>
+        <nav class="paginas" aria-label="Páginas">
+          <a href="inicio.html">Início</a>
+          <a href="index.html">Orçamento</a>
+          <a href="aportes.html">Aportes e consórcios</a>
+          <a href="carteira.html" aria-current="page">Carteira</a>
+          <a href="cartao.html">Cartão de crédito</a>
+          <a href="patrimonio.html">Patrimônio</a>
+          <a href="aposentadoria.html">Aposentadoria</a>
+          <a href="conferencia.html">Conferência</a>
+          <a href="oportunidades.html">Oportunidades</a>
+          <a href="pagamentos.html">Pagamentos</a>
+        </nav>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde todos os valores em reais, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+        <div class="seletor-mes">
+          <span id="rotulo-mes">Mês analisado</span>
+          <select id="sel-mes" aria-labelledby="rotulo-mes"></select>
+          <select id="sel-ano" aria-label="Ano analisado"></select>
+        </div>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo da carteira" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo">Patrimônio</span>
+        <strong id="c-patrimonio">–</strong>
+        <small id="c-patrimonio-det">importe a posição para ver</small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Total investido</span>
+        <strong id="c-investido">–</strong>
+        <small id="c-investido-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Saldo disponível</span>
+        <strong id="c-disponivel">–</strong>
+        <small>em conta, fora dos investimentos</small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Proventos a receber</span>
+        <strong id="c-proventos">–</strong>
+        <small id="c-proventos-det"></small>
+      </article>
+    </section>
+
+    <section class="cartao importar" aria-labelledby="t-importar">
+      <div class="cartao-topo"><h2 id="t-importar">Posição da corretora XP</h2></div>
+      <div class="importar-linha">
+        <label class="btn-arquivo" for="arquivo">Importar posição (.xlsx)</label>
+        <input id="arquivo" type="file" accept=".xlsx" hidden>
+        <button type="button" class="secundario" id="btn-saldo" hidden></button>
+        <button type="button" class="secundario" id="btn-remover" hidden>Remover dados importados</button>
+      </div>
+      <p id="status-import" class="nota"></p>
+      <div id="msg" class="alerta" role="alert" hidden></div>
+      <p class="nota">Como obter o arquivo: na XP, abra a sua carteira, procure a <strong>Posição detalhada</strong> e exporte para Excel (o arquivo costuma se chamar <em>PosicaoDetalhada.xlsx</em>; o caminho exato nos menus pode variar). O arquivo é lido aqui mesmo, no seu navegador, e <strong>nada é enviado para a internet</strong>. O número da conta e os dados do assessor que aparecem nele não são guardados.</p>
+    </section>
+
+    <div id="conteudo" hidden>
+      <section class="cartao" aria-labelledby="t-classes">
+        <div class="cartao-topo">
+          <h2 id="t-classes">Como a carteira se divide</h2>
+          <span class="dica">Segundo a classificação da própria XP</span>
+        </div>
+        <div id="barra-classes" class="barra-classes" role="img" aria-label=""></div>
+        <ul id="legenda-classes" class="legenda-classes"></ul>
+      </section>
+
+      <div id="secoes"></div>
+
+      <section class="cartao" aria-labelledby="t-prov">
+        <div class="cartao-topo">
+          <h2 id="t-prov">Proventos a receber</h2>
+          <span class="selo" id="selo-prov"></span>
+        </div>
+        <p class="nota">Dividendos, juros sobre capital próprio e rendimentos já provisionados, em ordem de data. "Sem data" é um evento sem previsão de pagamento.</p>
+        <div class="tabela-rolagem"><table id="tabela-prov" class="tabela tabela-simples"></table></div>
+      </section>
+
+      <section class="cartao" id="cartao-custodia" aria-labelledby="t-cust">
+        <div class="cartao-topo">
+          <h2 id="t-cust">Custódia remunerada</h2>
+          <span class="selo" id="selo-cust"></span>
+        </div>
+        <p class="nota">Ativos emprestados para remuneração. Eles <strong>já estão incluídos</strong> em Ações e em Fundos Imobiliários e por isso não são somados de novo.</p>
+        <div class="tabela-rolagem"><table id="tabela-cust" class="tabela tabela-simples"></table></div>
+      </section>
+    </div>
+
+    <p class="aviso">Os valores refletem o arquivo importado, na data em que ele foi gerado, e não são atualizados sozinhos. Importe um arquivo novo quando quiser atualizar. Simulação e organização pessoal, não é recomendação de investimento.</p>
+  </main>
+
+  <script src="exemplo-publico.js"></script>
+  <script src="comum.js"></script>
+  <script src="importar.js"></script>
+  <script src="carteira.js"></script>
+</body>
+</html>

@@ -1,0 +1,34 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex, nofollow">
+  <title>Meus programas</title>
+  <style>
+    :root { --fundo: #eef2f6; --cartao: #ffffff; --texto: #18232f; --suave: #5a6b7b; --borda: #dbe3ea; --azul: #1d6bc4; color-scheme: light dark; }
+    @media (prefers-color-scheme: dark) { :root { --fundo: #0e1620; --cartao: #16222f; --texto: #e7eef5; --suave: #9fb0c0; --borda: #2a3b4c; --azul: #6aa5ee; } }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--fundo); color: var(--texto); font: 16px/1.5 system-ui, "Segoe UI", Roboto, sans-serif; }
+    main { max-width: 640px; margin: 0 auto; padding: 32px 16px; }
+    h1 { margin: 0 0 6px; font-size: 1.5rem; }
+    p { margin: 0 0 20px; color: var(--suave); }
+    .app { display: flex; gap: 16px; align-items: center; padding: 16px; margin-bottom: 14px; background: var(--cartao); border: 1px solid var(--borda); border-radius: 14px; color: var(--texto); text-decoration: none; }
+    .app:hover { border-color: var(--azul); }
+    .app:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; }
+    .app img { border-radius: 12px; }
+    .app strong { display: block; font-size: 1.1rem; color: var(--azul); }
+    .app small { color: var(--suave); font-size: .9rem; }
+    .nota { font-size: .85rem; margin-top: 24px; }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>Meus programas</h1>
+    <p>Escolha um. No celular, abra o programa e use "Adicionar à tela inicial" do navegador para ter o ícone e abrir sem internet.</p>
+      <a class="app" href="planejador/index.html"><img src="planejador/icone-192.png" alt="" width="56" height="56"><span><strong>Planejador financeiro</strong><small>Orçamento, aportes, aposentadoria e patrimônio. Os dados ficam só no seu aparelho.</small></span></a>
+      <a class="app" href="missoes/index.html"><img src="missoes/icone-192.png" alt="" width="56" height="56"><span><strong>Fundo de Missões</strong><small>Vendas, reservas, doações e prestação de contas. Os dados ficam só no seu aparelho.</small></span></a>
+    <p class="nota">Os dados que você digita ficam guardados só neste aparelho, no navegador. Nada é enviado a um servidor. Para levar os dados de um aparelho a outro, baixe um backup no primeiro e restaure no segundo.</p>
+  </main>
+</body>
+</html>

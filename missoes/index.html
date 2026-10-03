@@ -1,0 +1,180 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Fundo de Missões</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="missoes.css">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="rgb(30,123,74)">
+  <link rel="apple-touch-icon" href="icone-192.png">
+  <script src="registrar-sw.js" defer></script>
+</head>
+<body>
+  <header class="topo">
+    <div class="topo-conteudo">
+      <div>
+        <h1>Fundo de Missões</h1>
+        <p>A cada venda, as reservas são separadas na hora. O que sobra na conta serve para doar e comprar suprimentos.</p>
+      </div>
+      <div class="topo-acoes">
+        <button type="button" id="btn-ocultar" class="ocultar" aria-pressed="false" title="Esconde valores e nomes, por exemplo para apresentar a tela a outras pessoas">Ocultar valores</button>
+        <button type="button" id="btn-baixar" class="ocultar" title="Baixa um arquivo com todos os dados">Baixar backup</button>
+        <label class="ocultar rotulo-arquivo" title="Restaura os dados de um backup baixado antes">Restaurar backup<input type="file" id="arq-backup" accept=".json,application/json" class="oculto-visual"></label>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <section class="resumo" aria-label="Resumo do fundo" aria-live="polite">
+      <article class="kpi">
+        <span class="kpi-rotulo">Vendido no total</span>
+        <strong id="k-vendido">–</strong>
+        <small id="k-vendido-det"></small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Guardado nas reservas</span>
+        <strong id="k-reservas">–</strong>
+        <small id="k-reservas-det"></small>
+      </article>
+      <article class="kpi resultado positivo">
+        <span class="kpi-rotulo">Livre na conta</span>
+        <strong id="k-livre">–</strong>
+        <small>para doar e comprar suprimentos</small>
+      </article>
+      <article class="kpi">
+        <span class="kpi-rotulo">Doado às missões</span>
+        <strong id="k-enviado">–</strong>
+        <small id="k-enviado-det"></small>
+      </article>
+    </section>
+
+    <p id="msg" class="mensagem" role="status" hidden></p>
+
+    <section class="cartao" aria-labelledby="t-venda">
+      <div class="cartao-topo"><h2 id="t-venda">Vendas</h2><span class="dica">Cada venda já é dividida entre as reservas e a conta</span></div>
+      <form id="f-venda" class="formulario" autocomplete="off">
+        <label>Data<input type="date" id="e-data" required></label>
+        <label>Cliente / descrição (opcional)<input type="text" id="e-origem" maxlength="60" placeholder="ex.: doces do culto"></label>
+        <label>Valor da venda (R$)<input type="text" id="e-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <button type="submit">Registrar venda</button>
+      </form>
+      <p id="previa" class="nota" aria-live="polite"></p>
+      <ul id="entradas" class="mi-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-res">
+      <div class="cartao-topo"><h2 id="t-res">Reservas</h2><span id="res-total" class="dica"></span></div>
+      <p class="nota">Percentuais sobre o valor de cada venda. Mudar um percentual vale só para as próximas vendas; as já registradas não mudam.</p>
+      <div class="tabela-rolagem">
+        <table class="mi-tabela">
+          <thead><tr><th scope="col">Reserva</th><th scope="col">% da venda</th><th scope="col">Separado</th><th scope="col">Retirado</th><th scope="col">Saldo</th></tr></thead>
+          <tbody id="reservas"></tbody>
+        </table>
+      </div>
+      <h3 class="mi-subtitulo">Retirar de uma reserva</h3>
+      <form id="f-retirada" class="formulario" autocomplete="off">
+        <label>Reserva<select id="r-reserva" required></select></label>
+        <label>Data<input type="date" id="r-data" required></label>
+        <label>Valor (R$)<input type="text" id="r-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <label>Para quê (opcional)<input type="text" id="r-nota" maxlength="60" placeholder="ex.: dízimo entregue"></label>
+        <button type="submit">Registrar retirada</button>
+      </form>
+      <ul id="retiradas" class="mi-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-aj">
+      <div class="cartao-topo"><h2 id="t-aj">Saldos que já existem e rendimento</h2><span class="dica">Para começar com o que já está nos porquinhos</span></div>
+      <p class="nota">Já tem dinheiro nos porquinhos ou na conta antes de registrar vendas? Lance como <strong>saldo inicial</strong>. Rendimentos recebidos também podem ser lançados aqui (ou calculados pelo CDI, logo abaixo).</p>
+      <form id="f-ajuste" class="formulario" autocomplete="off">
+        <label>Onde<select id="a-chave" required></select></label>
+        <label>Tipo<select id="a-tipo"><option value="inicial">Saldo inicial</option><option value="rendimento">Rendimento recebido</option></select></label>
+        <label>Data<input type="date" id="a-data" required></label>
+        <label>Valor (R$)<input type="text" id="a-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <button type="submit">Lançar</button>
+      </form>
+      <ul id="ajustes" class="mi-lista"></ul>
+
+      <h3 class="mi-subtitulo">Rendimento pelo CDI</h3>
+      <p class="nota">Estimativa: o CDI anual que você informar, aplicado só em dias úteis (segunda a sexta, sem feriados), em juros compostos, antes de IR e IOF. O dinheiro que entra num dia só rende a partir do dia útil seguinte. O resultado pode diferir de poucos centavos do app.</p>
+      <form id="f-cdi" class="formulario" autocomplete="off">
+        <label>CDI anual (%)<input type="text" id="cdi-anual" inputmode="decimal" placeholder="ex.: 14,65"></label>
+        <label>% do CDI que rende<input type="text" id="cdi-pct" inputmode="decimal" placeholder="100" value="100"></label>
+        <label>Calcular até<input type="date" id="cdi-ate"></label>
+        <button type="submit">Salvar e calcular</button>
+      </form>
+      <fieldset class="mi-rende"><legend>Rendem CDI</legend><div id="rende-marcas"></div></fieldset>
+      <div id="cdi-resultado"></div>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-sup">
+      <div class="cartao-topo"><h2 id="t-sup">Suprimentos para revender</h2><span class="dica">Sai do saldo livre da conta</span></div>
+      <form id="f-suprimento" class="formulario" autocomplete="off">
+        <label>Data<input type="date" id="s-data" required></label>
+        <label>O que comprou (opcional)<input type="text" id="s-desc" maxlength="60" placeholder="ex.: chocolate, embalagens"></label>
+        <label>Valor (R$)<input type="text" id="s-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <button type="submit">Registrar compra</button>
+      </form>
+      <ul id="suprimentos" class="mi-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-missoes">
+      <div class="cartao-topo"><h2 id="t-missoes">Missões</h2><span class="dica">Para onde as doações vão</span></div>
+      <form id="f-missao" class="formulario" autocomplete="off">
+        <label>Nome da missão<input type="text" id="m-nome" maxlength="60" required></label>
+        <label>Meta (R$, opcional)<input type="text" id="m-meta" inputmode="decimal" placeholder="0,00"></label>
+        <button type="submit">Adicionar missão</button>
+      </form>
+      <ul id="missoes" class="mi-lista"></ul>
+      <h3 class="mi-subtitulo">Doar a uma missão</h3>
+      <form id="f-envio" class="formulario" autocomplete="off">
+        <label>Data<input type="date" id="v-data" required></label>
+        <label>Missão<select id="v-missao" required></select></label>
+        <label>Valor (R$)<input type="text" id="v-valor" inputmode="decimal" placeholder="0,00" required></label>
+        <button type="submit">Registrar doação</button>
+      </form>
+      <ul id="envios" class="mi-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-conf">
+      <div class="cartao-topo"><h2 id="t-conf">Conferir com o app do banco</h2><span class="dica">Compare o saldo real com o calculado aqui</span></div>
+      <form id="f-conf" class="formulario" autocomplete="off">
+        <label>O que conferir<select id="c-chave" required></select></label>
+        <label>Saldo que o app mostra (R$)<input type="text" id="c-valor" inputmode="decimal" placeholder="0,00"></label>
+        <label>Data da conferência<input type="date" id="c-data"></label>
+        <button type="submit">Salvar conferência</button>
+      </form>
+      <ul id="conferencias" class="mi-lista"></ul>
+    </section>
+
+    <section class="cartao" aria-labelledby="t-meses">
+      <div class="cartao-topo"><h2 id="t-meses">Mês a mês</h2></div>
+      <div class="tabela-rolagem">
+        <table class="mi-tabela">
+          <thead><tr><th scope="col">Mês</th><th scope="col">Vendido</th><th scope="col">Doado</th><th scope="col">Suprimentos</th><th scope="col">Vendas</th></tr></thead>
+          <tbody id="meses"></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section class="cartao" id="sec-prestacao" aria-labelledby="t-prest">
+      <div class="cartao-topo"><h2 id="t-prest">Prestação de contas</h2><span class="dica">Resumo do mês para mostrar a quem contribui</span></div>
+      <div class="formulario">
+        <label>Mês<input type="month" id="pc-mes"></label>
+        <label class="mi-marca-linha"><span><input type="checkbox" id="pc-reservas"> Incluir as reservas (dízimo, oferta, poupança…)</span></label>
+        <button type="button" id="pc-copiar" class="secundario">Copiar texto</button>
+        <button type="button" id="pc-imprimir" class="secundario">Imprimir / salvar PDF</button>
+      </div>
+      <p id="pc-aviso" class="nota" role="status"></p>
+      <pre id="pc-texto" class="mi-relatorio" aria-label="Prestação de contas do mês"></pre>
+      <p class="nota">O resumo não traz nomes de clientes nem descrições das compras. As reservas ficam de fora, a menos que você marque para incluir.</p>
+    </section>
+
+    <p class="aviso">Os dados ficam só neste navegador (nada é enviado a lugar nenhum). Baixe um backup de vez em quando. O programa não consulta o banco: os saldos dos porquinhos e da conta são informados por você.</p>
+  </main>
+
+  <script src="calculo.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
