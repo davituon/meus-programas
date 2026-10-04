@@ -22,6 +22,125 @@
   function rotuloCurto(idx) { var m = chaveMes(idx); return String(m.mes).padStart(2, "0") + "/" + String(m.ano).slice(2); }
   function textoYM(ano, mes) { return ano + "-" + String(mes).padStart(2, "0"); }
 
+  // ---------------------------------------------------------------- importar fatura (CSV)
+  var IF = window.ImportarFatura, imp = null;
+
+  function mostrarImp(t, erro) { var m = document.getElementById("imp-msg"); m.textContent = t; m.hidden = !t; m.className = "alerta" + (erro ? "" : " ok"); }
+
+  /** Lê o arquivo como UTF-8 e, se der erro (bancos costumam usar Windows-1252), tenta Windows-1252. */
+  function lerTexto(arquivo) {
+    return arquivo.arrayBuffer().then(function (buf) {
+      try { return new TextDecoder("utf-8", { fatal: true }).decode(buf); }
+      catch (e) { return new TextDecoder("windows-1252").decode(buf); }
+    });
+  }
+
+  function mesesDaFatura() {
+    var out = [], ini = P.INICIO.ano * 12 + P.INICIO.mes - 1 - 6, i;
+    for (i = 0; i < 6 + 30; i++) { var idx = ini + i; out.push(Math.floor(idx / 12) + "-" + String(idx % 12 + 1).padStart(2, "0")); }
+    return out;
+  }
+  function rotuloMes(ym) { var p = ym.split("-"); return P.MESES[Number(p[1]) - 1].toLowerCase() + "/" + p[0]; }
+
+  function interpretarImp() {
+    var hoje = new Date(), ref = imp.mes ? { ano: Number(imp.mes.slice(0, 4)), mes: Number(imp.mes.slice(5, 7)) } : { ano: hoje.getFullYear(), mes: hoje.getMonth() + 1 };
+    imp.r = IF.interpretar(imp.grade, imp.colunas, imp.linhaCab, ref);
+    imp.marcados = {};
+    imp.r.lancamentos.forEach(function (l) { imp.marcados[l.n] = !l.ignorar; });
+  }
+
+  function desenharImportacao() {
+    var corpo = document.getElementById("imp-corpo");
+    corpo.hidden = !imp;
+    document.getElementById("imp-desfazer").hidden = !dados.cartao.compras.some(function (c) { return c.origem === "fatura" && c.lote; });
+    if (!imp) return;
+    var selC = limpar("imp-cartao"), selM = limpar("imp-mes");
+    opcoesDeCartao(imp.cartao).forEach(function (o) { selC.appendChild(o); });
+    mesesDaFatura().forEach(function (ym) { selM.appendChild(el("option", { value: ym, textContent: rotuloMes(ym), selected: ym === imp.mes })); });
+
+    // colunas
+    var cx = limpar("imp-colunas"), largura = imp.grade.reduce(function (m, l) { return Math.max(m, l.length); }, 0);
+    [["data", "Data", true], ["descricao", "Descrição", true], ["valor", "Valor", true], ["parcela", "Parcela (opcional)", false], ["categoria", "Categoria (opcional)", false]].forEach(function (c) {
+      var rot = el("label"), sel = el("select"); rot.appendChild(document.createTextNode(c[1])); rot.appendChild(sel);
+      sel.setAttribute("aria-label", "Coluna de " + c[1]);
+      if (!c[2]) sel.appendChild(el("option", { value: "", textContent: "(nenhuma)" }));
+      var exemplo = imp.grade[Math.min(imp.grade.length - 1, imp.linhaCab + 1)] || [];
+      for (var j = 0; j < largura; j++) {
+        var cab = imp.linhaCab >= 0 ? imp.grade[imp.linhaCab][j] : "";
+        sel.appendChild(el("option", { value: String(j), textContent: "Coluna " + (j + 1) + (cab ? " · " + cab : "") + (exemplo[j] && !P.estado.oculto ? " (ex.: " + exemplo[j].slice(0, 18) + ")" : ""), selected: imp.colunas[c[0]] === j }));
+      }
+      sel.addEventListener("change", function () {
+        if (sel.value === "") delete imp.colunas[c[0]]; else imp.colunas[c[0]] = Number(sel.value);
+        interpretarImp(); desenharImportacao();
+      });
+      cx.appendChild(rot);
+    });
+    document.getElementById("imp-colunas-caixa").open = imp.det.confianca !== "alta" || imp.r.lancamentos.length === 0;
+
+    // prévia
+    var L = imp.r.lancamentos, t = limpar("imp-tabela"), cab2 = el("tr");
+    ["", "Data", "Descrição", "Tipo", "Categoria", "Valor", "Situação"].forEach(function (h) { cab2.appendChild(el("th", { textContent: h, scope: "col" })); });
+    t.appendChild(el("thead")).appendChild(cab2);
+    var tb = el("tbody"), sel = 0, soma = 0, repetidas = 0;
+    L.forEach(function (l) {
+      var conv = IF.converter(l, imp.mes, imp.cartao), rep = !l.ignorar && IF.jaExiste(conv, dados.cartao.compras);
+      var tr = el("tr", { className: l.ignorar ? "cc-ignorada" : "" });
+      var cb = el("input", { type: "checkbox", checked: !!imp.marcados[l.n] });
+      cb.setAttribute("aria-label", "Importar " + l.descricao);
+      cb.addEventListener("change", function () { imp.marcados[l.n] = cb.checked; desenharImportacao(); });
+      var td0 = el("td"); td0.appendChild(cb); tr.appendChild(td0);
+      var p = l.data.split("-"); tr.appendChild(el("td", { textContent: p[2] + "/" + p[1] + "/" + p[0] }));
+      tr.appendChild(el("th", { scope: "row", textContent: l.descricao }));
+      tr.appendChild(el("td", { textContent: l.parcelasTotal ? "parcela " + l.parcelaAtual + " de " + l.parcelasTotal : "à vista" }));
+      tr.appendChild(el("td", { textContent: l.categoria }));
+      tr.appendChild(el("td", { textContent: (l.tipoLinha === "compra" ? "" : "− ") + moeda(l.valor) }));
+      tr.appendChild(el("td", { textContent: l.tipoLinha === "pagamento" ? "pagamento da fatura (ignorado)" : l.tipoLinha === "credito" ? "estorno ou crédito (ignorado)" : rep ? "! já existe" : "✓ nova" }));
+      tb.appendChild(tr);
+      if (imp.marcados[l.n]) { sel++; soma += l.valor; if (rep) repetidas++; }
+    });
+    if (!L.length) { var vz = el("tr"); vz.appendChild(el("td", { colSpan: 7, className: "vazio", textContent: "Nenhum lançamento lido. Ajuste as colunas acima." })); tb.appendChild(vz); }
+    t.appendChild(tb);
+    texto("imp-resumo", L.length ? sel + (sel === 1 ? " lançamento selecionado" : " lançamentos selecionados") + ", somando " + moeda(soma) + " (cartão " + cartaoPorId(imp.cartao).nome + ", fatura de " + rotuloMes(imp.mes) + ")." + (repetidas ? " ! " + repetidas + (repetidas === 1 ? " já existe" : " já existem") + " e será pulada." : "") + (imp.r.invalidas ? " " + imp.r.invalidas + " linha(s) do arquivo não puderam ser lidas." : "") : "");
+    document.getElementById("imp-importar").disabled = sel === 0;
+  }
+
+  function abrirImportacao(texto, nome) {
+    var grade = IF.lerCSV(texto);
+    if (!grade.length) { mostrarImp("O arquivo está vazio ou não parece um CSV.", true); return; }
+    var det = IF.detectar(grade);
+    imp = { grade: grade, det: det, colunas: Object.assign({}, det.colunas), linhaCab: det.linhaCab, cartao: escopo() === "todos" ? cartoes()[0].id : escopo(), mes: null, nome: nome };
+    var primeiro = IF.interpretar(grade, imp.colunas, imp.linhaCab, { ano: new Date().getFullYear(), mes: 12 });
+    imp.mes = IF.mesSugerido(primeiro.lancamentos) || new Date().toISOString().slice(0, 7);
+    if (mesesDaFatura().indexOf(imp.mes) < 0) imp.mes = mesesDaFatura()[6];
+    interpretarImp();
+    mostrarImp(det.confianca === "nenhuma" ? "Não reconheci as colunas. Escolha abaixo qual é a data, a descrição e o valor." : det.confianca === "baixa" ? "Não achei um cabeçalho; as colunas foram adivinhadas. Confira a prévia." : "", det.confianca !== "alta");
+    desenharImportacao();
+  }
+
+  P.abrirFatura = abrirImportacao; // também usado pelos testes de tela (a leitura do arquivo em si é assíncrona)
+  document.getElementById("imp-arquivo").addEventListener("change", function (e) {
+    var arq = e.target.files && e.target.files[0]; e.target.value = "";
+    if (!arq) return;
+    if (arq.size > 2 * 1024 * 1024) { mostrarImp("O arquivo é grande demais (mais de 2 MB) para ser uma fatura.", true); return; }
+    if (!/\.(csv|txt)$/i.test(arq.name)) { mostrarImp("Escolha o arquivo .csv da fatura. PDF e Excel (.xlsx) não são lidos: no Excel, use Salvar como CSV.", true); return; }
+    lerTexto(arq).then(function (t) { abrirImportacao(t, arq.name); }, function () { mostrarImp("Não consegui ler o arquivo.", true); });
+  });
+  document.getElementById("imp-cartao").addEventListener("change", function (e) { imp.cartao = e.target.value; desenharImportacao(); });
+  document.getElementById("imp-mes").addEventListener("change", function (e) { imp.mes = e.target.value; desenharImportacao(); });
+  document.getElementById("imp-cancelar").addEventListener("click", function () { imp = null; mostrarImp(""); desenharImportacao(); });
+  document.getElementById("imp-importar").addEventListener("click", function () {
+    var escolhidas = imp.r.lancamentos.filter(function (l) { return imp.marcados[l.n]; });
+    var r = IF.importar(dados.cartao.compras, escolhidas, imp.cartao, imp.mes);
+    salvar(); imp = null; desenhar();
+    mostrarImp(r.importadas + (r.importadas === 1 ? " compra importada" : " compras importadas") + (r.repetidas ? " e " + r.repetidas + " pulada(s) por já existirem" : "") + ". Confira nos blocos de cada cartão, abaixo. Se algo saiu errado, use \"Desfazer a última importação\".", false);
+  });
+  document.getElementById("imp-desfazer").addEventListener("click", function () {
+    var quantas = dados.cartao.compras.filter(function (c) { return c.origem === "fatura"; });
+    if (!window.confirm("Remover as compras da última importação de fatura?")) return;
+    var n = IF.desfazerUltima(dados.cartao.compras);
+    salvar(); desenhar(); mostrarImp(n + (n === 1 ? " compra removida." : " compras removidas."), false);
+  });
+
   // ---------------------------------------------------------------- blocos de cada cartão (estrutura)
   function campoTexto(valor, rotulo, aoMudar, classe) {
     var c = el("input", { type: "text", value: valor, maxLength: 60, className: classe || "campo-compra" });
@@ -297,6 +416,7 @@
     P.desenharCabecalho();
     desenharFiltro();
     desenharBlocos();
+    desenharImportacao();
     atualizar();
   }
 

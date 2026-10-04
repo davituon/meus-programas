@@ -72,6 +72,33 @@
       </article>
     </section>
 
+    <section class="cartao" aria-labelledby="t-imp">
+      <div class="cartao-topo"><h2 id="t-imp">Importar fatura (arquivo CSV)</h2><span class="dica">Em vez de digitar compra por compra</span></div>
+      <p class="nota">No app ou site do banco, baixe a fatura em <strong>CSV</strong> (ou Excel salvo como CSV). O arquivo é lido aqui mesmo, no navegador, e <strong>nada é enviado para a internet</strong>. Cada banco usa um formato: confira a prévia antes de importar. Pagamentos da fatura e estornos vêm desmarcados. PDF não é lido.</p>
+      <div class="importar-linha">
+        <label class="btn-arquivo" for="imp-arquivo">Escolher o arquivo da fatura (.csv)</label>
+        <input id="imp-arquivo" type="file" accept=".csv,.txt,text/csv,text/plain" hidden>
+        <button type="button" class="secundario" id="imp-desfazer" hidden>Desfazer a última importação</button>
+      </div>
+      <div id="imp-msg" class="alerta" role="alert" hidden></div>
+      <div id="imp-corpo" hidden>
+        <div class="cc-form">
+          <label>Cartão desta fatura<select id="imp-cartao"></select></label>
+          <label>Mês da fatura<select id="imp-mes"></select></label>
+        </div>
+        <details class="corrigir-classes" id="imp-colunas-caixa">
+          <summary>Colunas não ficaram certas? Ajustar</summary>
+          <div id="imp-colunas" class="cc-form"></div>
+        </details>
+        <p id="imp-resumo" class="lead-menor" role="status"></p>
+        <div class="tabela-rolagem"><table id="imp-tabela" class="tabela tabela-simples"></table></div>
+        <div class="importar-linha">
+          <button type="button" id="imp-importar">Importar as selecionadas</button>
+          <button type="button" class="secundario" id="imp-cancelar">Cancelar</button>
+        </div>
+      </div>
+    </section>
+
     <section class="cartao" aria-labelledby="t-faixa">
       <div class="cartao-topo">
         <h2 id="t-faixa">Fatura de cada cartão</h2>
@@ -129,6 +156,7 @@
   <script src="copia-automatica.js"></script>
   <script src="exemplo-publico.js"></script>
   <script src="comum.js"></script>
+  <script src="importar-fatura.js"></script>
   <script src="cartao.js"></script>
 </body>
 </html>

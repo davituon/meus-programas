@@ -574,3 +574,7 @@ button.remover { min-width: 28px; min-height: 28px; }
 .mi-item .mi-valor { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
 @media (max-width: 700px) { .mi-item { grid-template-columns: minmax(0, 1fr) auto 32px; } .mi-item .mi-data { grid-column: 1 / -1; font-size: .8rem; color: var(--suave); } }
 #gasto-form input.mini, #gasto-form select.mini { min-height: 40px; }
+
+/* ---------- importar fatura (Cartão) ---------- */
+.cc-ignorada th, .cc-ignorada td { color: var(--suave); }
+#imp-tabela td input[type="checkbox"] { width: 24px; height: 24px; }
