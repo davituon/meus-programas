@@ -98,7 +98,7 @@
       var contas = linha.saldoXP + linha.saldoPrev, deficit = linha.deficit, liquido = liquidoDe(ap);
       var imposto = Math.max(0, contas) * (1 - liquido), patrimonio = contas - imposto - deficit;
       var falta = necessario - patrimonio;
-      var realXP = (Math.pow((1 + ((Number(d0.aportes.xp.retorno) || 0) - num(ap.custo)) / 100) / (1 + (Number(d0.reajuste.inflacao) || 0) / 100), 1 / 12) - 1);
+      var realXP = (Math.pow((1 + P.pctSeguro(P.pctSeguro(d0.aportes.xp.retorno) - num(ap.custo)) / 100) / (1 + P.pctSeguro(d0.reajuste.inflacao) / 100), 1 / 12) - 1);
       // o aporte extra também paga imposto no resgate: para sobrar `falta` depois do imposto, precisa acumular falta / (1 - imposto)
       var extra = falta > 0 && liquido > 0 ? pagamentoPara(realXP, n, falta / liquido) : 0;
       return {

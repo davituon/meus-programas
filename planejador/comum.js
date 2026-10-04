@@ -90,6 +90,23 @@ window.Plano = (function () {
     return alvo;
   }
 
+  /** Troca por 0 os números que não são finitos (um backup com 1e999, por exemplo) e limita os valores a ±1 trilhão. */
+  function saneiaNumeros(salvo) {
+    var LIM = 1e12;
+    var limpa = function (o, chaves) {
+      if (!o || typeof o !== "object") return;
+      chaves.forEach(function (k) { if (typeof o[k] === "number") o[k] = isFinite(o[k]) ? Math.max(-LIM, Math.min(LIM, o[k])) : 0; });
+    };
+    ["receitas", "extras", "unicas", "folha", "despesas", "reembolsos", "reservas"].forEach(function (l) {
+      if (Array.isArray(salvo[l])) salvo[l].forEach(function (x) { limpa(x, ["valor", "pct", "reaj", "mes"]); if (x && x.cota) limpa(x.cota, ["carta", "pago", "custos"]); });
+    });
+    limpa(salvo.reajuste, ["inflacao", "receitas", "folha", "despesas", "reembolsos"]);
+    if (salvo.aportes) { limpa(salvo.aportes, []); limpa(salvo.aportes.xp, ["saldo", "retorno"]); limpa(salvo.aportes.prev, ["saldo", "retorno", "empresa"]); }
+    limpa(salvo.aposentadoria, ["idade", "aposentar", "inss_idade", "ate_idade", "gasto", "inss", "retorno", "imposto", "custo", "var_cenarios"]);
+    if (salvo.cartao && Array.isArray(salvo.cartao.compras)) salvo.cartao.compras.forEach(function (c) { limpa(c, ["valor", "parcelas"]); });
+    if (salvo.patrimonio) ["bens", "dividas"].forEach(function (l) { if (Array.isArray(salvo.patrimonio[l])) salvo.patrimonio[l].forEach(function (x) { limpa(x, ["valor"]); }); });
+  }
+
   /** Completa dados salvos por versões anteriores. */
   function migrar(salvo) {
     ["reservas", "folha", "extras", "unicas", "reembolsos"].forEach(function (chave) {
@@ -97,6 +114,7 @@ window.Plano = (function () {
     });
     if (!salvo.ref || !salvo.ref.ano || !salvo.ref.mes || antesDoInicio(salvo.ref.ano, salvo.ref.mes)) salvo.ref = copiar(EXEMPLO.ref);
     salvo.reajuste = completar(salvo.reajuste, EXEMPLO.reajuste);
+    saneiaNumeros(salvo);
     salvo.aportes = completar(salvo.aportes, EXEMPLO.aportes);
     salvo.aportes.xp = completar(salvo.aportes.xp, EXEMPLO.aportes.xp);
     salvo.aportes.prev = completar(salvo.aportes.prev, EXEMPLO.aportes.prev);
@@ -215,10 +233,16 @@ window.Plano = (function () {
   }
 
   /** Fator sobre o valor de hoje: reajuste acumulado desde o ano base (e, em "reais de hoje", descontada a inflação). */
+  /** Percentual ao ano limitado a −90% e +1000% (e 0 se não for número): evita divisão por zero e raiz de número negativo nas contas. */
+  function pctSeguro(v) {
+    var n = Number(v);
+    return isFinite(n) ? Math.max(-90, Math.min(1000, n)) : 0;
+  }
+
   function fator(taxa, ano) {
     var n = ano - INICIO.ano, r = estado.dados.reajuste;
-    var f = Math.pow(1 + taxa / 100, n);
-    if (r.modo === "real") f /= Math.pow(1 + (Number(r.inflacao) || 0) / 100, n);
+    var f = Math.pow(1 + pctSeguro(taxa) / 100, n);
+    if (r.modo === "real") f /= Math.pow(1 + pctSeguro(r.inflacao) / 100, n);
     return f;
   }
 
@@ -292,7 +316,7 @@ window.Plano = (function () {
    */
   function valorNaFatura(c, ano, mes) {
     var v = parcelaDaCompra(c, ano, mes);
-    if (v > 0 && c.tipo === "recorrente") v *= Math.pow(1 + (Number(estado.dados.reajuste.despesas) || 0) / 100, ano - INICIO.ano);
+    if (v > 0 && c.tipo === "recorrente") v *= Math.pow(1 + pctSeguro(estado.dados.reajuste.despesas) / 100, ano - INICIO.ano);
     return v;
   }
 
@@ -366,8 +390,8 @@ window.Plano = (function () {
    * `custoPct` (opcional) são pontos percentuais ao ano de taxas (administração, custódia) tirados do retorno.
    */
   function taxaMensal(retornoPct, custoPct) {
-    var r = estado.dados.reajuste, anual = ((Number(retornoPct) || 0) - (Number(custoPct) || 0)) / 100;
-    if (r.modo === "real") anual = (1 + anual) / (1 + (Number(r.inflacao) || 0) / 100) - 1;
+    var r = estado.dados.reajuste, anual = pctSeguro(pctSeguro(retornoPct) - pctSeguro(custoPct)) / 100;
+    if (r.modo === "real") anual = (1 + anual) / (1 + pctSeguro(r.inflacao) / 100) - 1;
     return Math.pow(1 + anual, 1 / 12) - 1;
   }
 
@@ -621,7 +645,7 @@ window.Plano = (function () {
     CHAVE: CHAVE, MESES: MESES, MESES_LONGOS: MESES_LONGOS, ANO_INICIAL: ANO_INICIAL, ANOS: ANOS, INICIO: INICIO, EXEMPLO: EXEMPLO,
     rotuloInicio: rotuloInicio, estado: estado, copiar: copiar, dadosPadrao: dadosPadrao, salvar: salvar, definirDados: definirDados, antesDoInicio: antesDoInicio,
     moeda: moeda, moedaInteira: moedaInteira, formatoNumero: formatoNumero, lerNumero: lerNumero, formatarAte: formatarAte, lerAte: lerAte,
-    indiceDe: indiceDe, pctDe: pctDe, ativo: ativo, taxaDoItem: taxaDoItem, fator: fator, somaMes: somaMes, pctReservas: pctReservas,
+    indiceDe: indiceDe, pctDe: pctDe, ativo: ativo, taxaDoItem: taxaDoItem, fator: fator, pctSeguro: pctSeguro, somaMes: somaMes, pctReservas: pctReservas,
     custosDaCota: custosDaCota, patrimonioAtual: patrimonioAtual, NOMES_TIPO_BEM: NOMES_TIPO_BEM, calcMes: calcMes, parcelaDaCompra: parcelaDaCompra, valorNaFatura: valorNaFatura, parcelasRestantes: parcelasRestantes, faturaDoMes: faturaDoMes, taxaMensal: taxaMensal, serieAportes: serieAportes, emReais: emReais, linhaDoMes: linhaDoMes,
     montarBackup: montarBackup, lerBackup: lerBackup, restaurarBackup: restaurarBackup, ultimoBackup: ultimoBackup, registrarBackupFeito: registrarBackupFeito, backupAtrasado: backupAtrasado,
     aoSalvar: aoSalvar, limpar: limpar, soma: soma,

@@ -70,7 +70,11 @@
       var partes = {};
       if (e.partes && typeof e.partes === "object" && !Array.isArray(e.partes)) Object.keys(e.partes).forEach(function (k) { if (resIds[k] && num(e.partes[k]) > 0) partes[k] = arred(num(e.partes[k])); });
       var soma = Object.keys(partes).reduce(function (t, k) { return t + partes[k]; }, 0);
-      if (soma > num(e.valor) + 0.001) partes = {};
+      if (soma > num(e.valor) + 0.001) {
+        // sobra de centavos por arredondamento (dados de versões anteriores): tira o excesso da maior parte; excesso grande é dado inválido
+        if (soma - num(e.valor) < 0.1) partes = ajustaCentavos(partes, arred(num(e.valor)));
+        else partes = {};
+      }
       var venda = { id: String(e.id || novoId()), data: e.data, origem: String(e.origem || "").slice(0, 60), valor: arred(num(e.valor)), partes: partes };
       if (e.custo !== undefined && e.custo !== null && e.custo !== "" && isFinite(Number(e.custo)) && Number(e.custo) >= 0) venda.custo = arred(Number(e.custo));
       return venda;
@@ -108,9 +112,24 @@
 
   /** Divide uma venda pelas reservas atuais. A parte da conta é o que sobra, então os centavos sempre fecham. */
   function dividir(d, valor) {
-    var partes = {}, total = 0;
-    d.reservas.forEach(function (r) { var p = arred(valor * r.pct / 100); if (p > 0) { partes[r.id] = p; total += p; } });
-    return { partes: partes, conta: arred(valor - total) };
+    var partes = {};
+    d.reservas.forEach(function (r) { var p = arred(valor * r.pct / 100); if (p > 0) partes[r.id] = p; });
+    partes = ajustaCentavos(partes, valor);
+    var total = Object.keys(partes).reduce(function (t, k) { return t + partes[k]; }, 0);
+    return { partes: partes, conta: Math.max(0, arred(valor - total)) };
+  }
+
+  /** Se, por arredondamento, as partes passarem do valor (acontece quando os percentuais somam 100%), tira os centavos a mais da maior parte. */
+  function ajustaCentavos(partes, valor) {
+    var chaves = Object.keys(partes), total = chaves.reduce(function (t, k) { return t + partes[k]; }, 0), excesso = Math.round((total - valor) * 100), guarda = 0;
+    while (excesso > 0 && guarda++ < 1000) {
+      var maior = chaves.filter(function (k) { return partes[k] > 0.005; }).sort(function (a, b) { return partes[b] - partes[a]; })[0];
+      if (!maior) break;
+      partes[maior] = arred(partes[maior] - 0.01); excesso--;
+      if (partes[maior] <= 0) delete partes[maior];
+      chaves = Object.keys(partes);
+    }
+    return partes;
   }
 
   /** Números da tela. `hojeIso` define o "mês atual". */

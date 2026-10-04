@@ -33,9 +33,9 @@
       d.despesas.forEach(function (x) {
         var base = "d:" + (x.nome || "despesa"), n = (vistos[base] = (vistos[base] || 0) + 1), chave = n > 1 ? base + "#" + n : base;
         if (x.cota || !P.ativo(x, ano, mes)) return;
-        var orcado = num(x.valor) * P.fator(P.taxaDoItem("despesas", x), ano);
-        if (orcado <= 0) return;
-        out.push({ chave: chave, nome: x.nome || "despesa", orcado: arred(orcado) });
+        var orcado = arred(num(x.valor) * P.fator(P.taxaDoItem("despesas", x), ano));
+        if (!(orcado > 0) || !isFinite(orcado)) return;
+        out.push({ chave: chave, nome: x.nome || "despesa", orcado: orcado });
       });
     });
     return out;
