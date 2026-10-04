@@ -107,6 +107,8 @@ window.Plano = (function () {
     if (salvo.carteira === undefined) salvo.carteira = null;
     if (!salvo.conferidas || typeof salvo.conferidas !== "object" || Array.isArray(salvo.conferidas)) salvo.conferidas = {};
     if (!salvo.realizados || typeof salvo.realizados !== "object" || Array.isArray(salvo.realizados)) salvo.realizados = {};
+    if (!salvo.alocacao || typeof salvo.alocacao !== "object" || Array.isArray(salvo.alocacao)) salvo.alocacao = {};
+    ["alvo", "retorno", "mapa"].forEach(function (k) { if (!salvo.alocacao[k] || typeof salvo.alocacao[k] !== "object" || Array.isArray(salvo.alocacao[k])) salvo.alocacao[k] = {}; });
     if (!salvo.pagamentos || typeof salvo.pagamentos !== "object" || Array.isArray(salvo.pagamentos)) salvo.pagamentos = {};
     if (!salvo.cartao || !Array.isArray(salvo.cartao.compras)) salvo.cartao = { compras: [] };
     if (!Array.isArray(salvo.cartao.cartoes) || !salvo.cartao.cartoes.length) salvo.cartao.cartoes = copiar(EXEMPLO.cartao.cartoes);

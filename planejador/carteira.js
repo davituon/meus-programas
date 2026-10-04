@@ -141,6 +141,90 @@
   }
 
   // ---------------------------------------------------------------- página
+  // ---------------------------------------------------------------- alocação-alvo, concentração e retorno esperado
+  var Al = P.alocacao, NIVEIS = { bom: "✓ Boa", atencao: "! Atenção", alerta: "⚠ Alerta" };
+
+  function entrada(valor, rotulo, aoMudar, largura) {
+    var i = el("input", { type: "text", className: "mini", value: valor === null || valor === undefined ? "" : String(valor).replace(".", ","), inputMode: "decimal" });
+    i.style.maxWidth = largura || "84px"; i.setAttribute("aria-label", rotulo);
+    i.addEventListener("change", function () { if (!aoMudar(i.value)) i.setAttribute("aria-invalid", "true"); else { i.removeAttribute("aria-invalid"); salvar(); desenharAlocacao(dados.carteira); } });
+    return i;
+  }
+  function sinal(v, casas) { return (v < 0 ? "− " : "+ ") + Math.abs(v).toFixed(casas).replace(".", ",") + " pp"; }
+
+  function desenharAlocacao(c) {
+    var a = Al.analisar(c, dados.alocacao), t = limpar("tabela-alocacao"), cab = el("tr");
+    if (!a) return;
+    ["Classe", "Hoje", "% hoje", "Alvo (%)", "Desvio", "Retorno esperado (% ao ano)", "Aportar para chegar ao alvo"].forEach(function (h) { cab.appendChild(el("th", { textContent: h, scope: "col" })); });
+    t.appendChild(el("thead")).appendChild(cab);
+    var corpo = el("tbody");
+    a.classes.forEach(function (k) {
+      var tr = el("tr"), th = el("th", { scope: "row", textContent: k.nome });
+      tr.appendChild(th);
+      tr.appendChild(el("td", { textContent: k.valor > 0 ? moeda(k.valor) : "–" }));
+      tr.appendChild(el("td", { textContent: k.valor > 0 ? porcento(k.pct * 100, 1) : "–" }));
+      var tdA = el("td"); tdA.appendChild(entrada(k.alvo, "Alvo de " + k.nome + " em %", function (v) { return Al.definirAlvo(dados.alocacao, k.id, v); })); tr.appendChild(tdA);
+      var desvio = el("td", { textContent: k.desvio === null ? "–" : Math.abs(k.desvio) < 0.05 ? "no alvo" : sinal(k.desvio, 1) });
+      if (k.desvio !== null && Math.abs(k.desvio) >= 5) desvio.className = k.desvio > 0 ? "negativo" : "positivo";
+      tr.appendChild(desvio);
+      var tdR = el("td"); tdR.appendChild(entrada(k.retorno, "Retorno esperado de " + k.nome + " em % ao ano", function (v) { return Al.definirRetorno(dados.alocacao, k.id, v); })); tr.appendChild(tdR);
+      tr.appendChild(el("td", { textContent: k.compra === null ? "–" : k.compra > 0.005 ? moeda(k.compra) : "–" }));
+      corpo.appendChild(tr);
+    });
+    t.appendChild(corpo);
+
+    var r = a.rebalanceamento, texto1;
+    if (!a.temAlvo) texto1 = "Preencha o alvo de cada classe para ver o desvio e quanto aportar.";
+    else if (!a.fechado) texto1 = "Os alvos somam " + porcento(a.somaAlvo, 1) + ": ajuste para que somem 100%.";
+    else if (r.possivel) texto1 = r.aporte < 0.005 ? "✓ A carteira já está no alvo." : "Para chegar ao alvo só aportando (sem vender), seria preciso aportar " + moeda(r.aporte) + ", distribuídos como na última coluna. Com aportes menores, comece pela classe mais abaixo do alvo.";
+    else texto1 = "Há " + moeda(r.venda) + " em classes sem alvo (" + r.foraDoAlvo.join("; ") + "): só dá para chegar ao alvo vendendo parte delas.";
+    texto("alocacao-texto", texto1);
+
+    var btn = document.getElementById("btn-retorno");
+    if (a.retornoEsperado === null) {
+      texto("retorno-texto", "Retorno esperado da carteira: informe o retorno esperado de " + a.faltandoRetorno.join("; ") + " para calcular.");
+      btn.hidden = true;
+    } else {
+      var re = Math.round(a.retornoEsperado * 10) / 10;
+      texto("retorno-texto", "Retorno esperado ponderado pela carteira de hoje: " + porcento(re, 1) + " ao ano (nominal). A página Aportes usa hoje " + porcento(Number(dados.aportes.xp.retorno) || 0, 1) + " para a corretora.");
+      btn.hidden = false; btn.textContent = "Usar " + porcento(re, 1) + " como retorno da corretora XP";
+      btn.onclick = function () { dados.aportes.xp.retorno = re; salvar(); mostrarMensagem("Retorno da corretora XP atualizado para " + porcento(re, 1) + " ao ano. Veja o efeito em Aportes e Aposentadoria.", false); desenharAlocacao(c); };
+    }
+
+    // concentração
+    var co = a.concentracao, tc = limpar("tabela-concentracao"), cab2 = el("tr");
+    ["Posição", "Classe", "Valor", "% da carteira"].forEach(function (h) { cab2.appendChild(el("th", { textContent: h, scope: "col" })); });
+    tc.appendChild(el("thead")).appendChild(cab2);
+    var corpo2 = el("tbody"), nomes = {}; Al.CLASSES.forEach(function (k) { nomes[k.id] = k.nome; });
+    co.maiores.forEach(function (m) {
+      var tr = el("tr");
+      tr.appendChild(el("th", { scope: "row", textContent: m.nome }));
+      tr.appendChild(el("td", { textContent: nomes[m.classe] }));
+      tr.appendChild(el("td", { textContent: moeda(m.saldo) }));
+      tr.appendChild(el("td", { textContent: porcento(m.pct * 100, 1) }));
+      corpo2.appendChild(tr);
+    });
+    tc.appendChild(corpo2);
+    texto("concentracao-texto", NIVEIS[co.nivel] + ": a maior posição é " + porcento(co.maior * 100, 1) + " da carteira e as 5 maiores somam " + porcento(co.top5 * 100, 1) + " (" + co.qtd + " ativos). Referência: nenhuma posição acima de 10%; acima de 20% é concentração alta. Renda fixa bancária tem a garantia do FGC só até 250 mil reais por instituição: confira o emissor de cada título.");
+
+    // classe de cada ativo
+    var tab = limpar("tabela-ativos"), cab3 = el("tr");
+    ["Ativo", "Valor", "Classe"].forEach(function (h) { cab3.appendChild(el("th", { textContent: h, scope: "col" })); });
+    tab.appendChild(el("thead")).appendChild(cab3);
+    var corpo3 = el("tbody");
+    Al.ativos(c, dados.alocacao.mapa).sort(function (x, y) { return y.saldo - x.saldo; }).forEach(function (at) {
+      var tr = el("tr"), sel = el("select", { className: "mini" });
+      sel.setAttribute("aria-label", "Classe de " + at.nome);
+      Al.CLASSES.forEach(function (k) { sel.appendChild(el("option", { value: k.id, textContent: k.nome, selected: k.id === at.classe })); });
+      sel.addEventListener("change", function () { Al.definirClasse(dados.alocacao, at.nome, sel.value); salvar(); desenharAlocacao(c); });
+      tr.appendChild(el("th", { scope: "row", textContent: at.nome }));
+      tr.appendChild(el("td", { textContent: moeda(at.saldo) }));
+      var td = el("td"); td.appendChild(sel); tr.appendChild(td);
+      corpo3.appendChild(tr);
+    });
+    tab.appendChild(corpo3);
+  }
+
   function desenhar() {
     P.desenharCabecalho();
     mostrarMensagem(""); // mensagens antigas podem conter valores em reais: somem ao redesenhar (ex.: ao ocultar valores)
@@ -164,6 +248,7 @@
     btnSaldo.textContent = "Usar " + dinheiro(c.patrimonio) + " como saldo da corretora XP";
 
     desenharClasses(c);
+    desenharAlocacao(c);
     desenharSecoes(c);
     var prov = desenharProventos(c);
     desenharCustodia(c);

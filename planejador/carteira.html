@@ -95,6 +95,32 @@
         <ul id="legenda-classes" class="legenda-classes"></ul>
       </section>
 
+      <section class="cartao" aria-labelledby="t-alocacao">
+        <div class="cartao-topo">
+          <h2 id="t-alocacao">Alocação-alvo e rebalanceamento</h2>
+          <span class="dica">As classes são deduzidas pelo nome dos ativos</span>
+        </div>
+        <p class="nota">Defina quanto de cada classe você quer ter (a soma deve dar 100%). A tabela mostra o desvio de hoje e quanto <strong>aportar em cada classe, sem vender nada</strong>, para chegar ao alvo. O retorno esperado é uma premissa sua (por classe, em % ao ano, nominal): com ele, a página calcula o retorno ponderado da carteira.</p>
+        <div class="tabela-rolagem"><table id="tabela-alocacao" class="tabela tabela-simples"></table></div>
+        <p id="alocacao-texto" class="lead-menor" role="status"></p>
+        <p id="retorno-texto" class="lead-menor" role="status"></p>
+        <button type="button" id="btn-retorno" class="secundario" hidden></button>
+      </section>
+
+      <section class="cartao" aria-labelledby="t-conc">
+        <div class="cartao-topo">
+          <h2 id="t-conc">Concentração</h2>
+          <span class="dica">Maiores posições da carteira</span>
+        </div>
+        <div class="tabela-rolagem"><table id="tabela-concentracao" class="tabela tabela-simples"></table></div>
+        <p id="concentracao-texto" class="lead-menor" role="status"></p>
+        <details class="corrigir-classes">
+          <summary>Conferir ou corrigir a classe de cada ativo</summary>
+          <p class="nota">A classe é deduzida pelo nome (por exemplo, final 11 vira fundo imobiliário e "IPCA" vira inflação). Se algum ativo caiu na classe errada, escolha a certa aqui.</p>
+          <div class="tabela-rolagem"><table id="tabela-ativos" class="tabela tabela-simples"></table></div>
+        </details>
+      </section>
+
       <div id="secoes"></div>
 
       <section class="cartao" aria-labelledby="t-prov">
@@ -122,6 +148,7 @@
   <script src="exemplo-publico.js"></script>
   <script src="comum.js"></script>
   <script src="importar.js"></script>
+  <script src="calculo-alocacao.js"></script>
   <script src="carteira.js"></script>
 </body>
 </html>
