@@ -74,6 +74,110 @@
     }
   }
 
+  // ------------------------------------------------------------ evolução real × plano
+  var NS = "http://www.w3.org/2000/svg", E = P.evolucao;
+  function svg(tag, attrs, filhos) {
+    var e = document.createElementNS(NS, tag);
+    Object.keys(attrs || {}).forEach(function (k) { e.setAttribute(k, attrs[k]); });
+    (filhos || []).forEach(function (f) { e.appendChild(f); });
+    return e;
+  }
+  function dataBr(iso) { var p = iso.split("-"); return p[2] + "/" + p[1] + "/" + p[0]; }
+  function pctSinal(v) { return (v < 0 ? "− " : "+ ") + (Math.abs(v) * 100).toFixed(1).replace(".", ",") + "%"; }
+
+  function formEvolucao() {
+    var caixa = limpar("evo-form"), sug = E.sugestao();
+    var rotulo = function (texto, filho) { var l = el("label"); l.appendChild(document.createTextNode(texto)); l.appendChild(filho); return l; };
+    var data = el("input", { type: "date", id: "evo-data", value: E.hoje() });
+    var xp = P.campoNumero({ moeda: true, prefixo: "R$", valor: sug.xp, rotulo: "Saldo da corretora" });
+    var prev = P.campoNumero({ moeda: true, prefixo: "R$", valor: sug.prev, rotulo: "Saldo da previdência" });
+    var ok = el("button", { type: "button", id: "evo-registrar", textContent: "Registrar saldos" });
+    ok.addEventListener("click", function () {
+      if (P.estado.oculto) { texto("evo-resumo", "Mostre os valores para registrar os saldos."); return; }
+      var erro = E.registrar(data.value, P.lerNumero(xp.campo.value), P.lerNumero(prev.campo.value));
+      if (erro) { texto("evo-resumo", erro); return; }
+      desenhar();
+    });
+    var redef = el("button", { type: "button", id: "evo-redefinir", className: "secundario", textContent: "Atualizar o ponto de partida" });
+    redef.addEventListener("click", function () {
+      if (!window.confirm("Usar os saldos atuais da página Aportes como novo ponto de partida do plano?")) return;
+      E.redefinirBase(); desenhar();
+    });
+    caixa.append(rotulo("Data", data), rotulo("Corretora", xp.caixa), rotulo("Previdência", prev.caixa), ok);
+    if (P.estado.dados.historico.base) caixa.appendChild(redef);
+  }
+
+  function graficoEvolucao(c, proj) {
+    var W = 720, H = 300, M = { l: 78, r: 18, t: 20, b: 36 }, caixa = limpar("evo-grafico"), leg = limpar("evo-legenda"), escondido = P.estado.oculto;
+    var ini = P.INICIO.ano * 12 + P.INICIO.mes - 1, ultimaFoto = c.pontos.length ? c.pontos[c.pontos.length - 1].data : E.inicioIso();
+    var up = ultimaFoto.split("-").map(Number), fimIdx = Math.max(ini + 12, up[0] * 12 + up[1] - 1 + 6);
+    var xv = function (idx) { return M.l + (idx - ini) / (fimIdx - ini) * (W - M.l - M.r); };
+    var base = c.base.xp + c.base.prev, plano = [{ idx: ini - 1, v: base }].concat(proj.filter(function (l) { return l.ano * 12 + l.mes - 1 <= fimIdx; }).map(function (l) { return { idx: l.ano * 12 + l.mes - 1, v: l.plano }; }));
+    var reais = c.pontos.map(function (p) { var q = p.data.split("-").map(Number); return { idx: q[0] * 12 + q[1] - 1 + (q[2] - 0.5) / new Date(q[0], q[1], 0).getDate(), v: p.real, p: p }; });
+    var maxY = Math.max.apply(null, plano.map(function (p) { return p.v; }).concat(reais.map(function (p) { return p.v; }), [1])) * 1.08;
+    var y = function (v) { return H - M.b - v / maxY * (H - M.t - M.b); };
+    var raiz = svg("svg", { viewBox: "0 0 " + W + " " + H, role: "img" }), i;
+    for (i = 0; i <= 4; i++) {
+      var v = maxY / 4 * i;
+      raiz.appendChild(svg("line", { x1: M.l, x2: W - M.r, y1: y(v), y2: y(v), class: "gv-grade" }));
+      if (!escondido) raiz.appendChild(svg("text", { x: M.l - 8, y: y(v) + 4, "text-anchor": "end", class: "gv-tick" }, [document.createTextNode(P.moedaInteira(v))]));
+    }
+    for (i = ini; i <= fimIdx; i += 2) {
+      var ano = Math.floor(i / 12), mes = i % 12;
+      raiz.appendChild(svg("text", { x: xv(i), y: H - 14, "text-anchor": "middle", class: "gv-tick" }, [document.createTextNode(P.MESES[mes].toLowerCase() + (mes === 0 || i === ini ? "/" + String(ano).slice(2) : ""))]));
+    }
+    raiz.appendChild(svg("path", { d: plano.map(function (p, k) { return (k ? "L" : "M") + (k === 0 ? xv(ini) : xv(p.idx + 1)).toFixed(1) + "," + y(p.v).toFixed(1); }).join(" "), class: "gv-consumindo" }));
+    if (reais.length) raiz.appendChild(svg("path", { d: reais.map(function (p, k) { return (k ? "L" : "M") + xv(p.idx).toFixed(1) + "," + y(p.v).toFixed(1); }).join(" "), class: "gv-acumulando" }));
+    reais.forEach(function (p) {
+      var ponto = svg("circle", { cx: xv(p.idx), cy: y(p.v), r: 7, class: "gv-ponto" });
+      ponto.appendChild(svg("title", {}, [document.createTextNode(dataBr(p.p.data) + " · real " + moeda(p.p.real) + " · plano " + (p.p.plano === null ? "–" : moeda(p.p.plano)))]));
+      raiz.appendChild(ponto);
+    });
+    var ult = c.ultimo;
+    raiz.setAttribute("aria-label", "Patrimônio financeiro real contra o plano, em valores nominais. " + (ult ? "Em " + dataBr(ult.data) + ": real " + moeda(ult.real) + (ult.plano === null ? "" : ", plano " + moeda(ult.plano)) + "." : "Sem registros ainda."));
+    caixa.appendChild(raiz);
+    [["cons", "Plano (tracejada)"], ["acum", "Real, nos seus registros (linha cheia com pontos)"]].forEach(function (it) {
+      var li = el("li"); li.appendChild(el("span", { className: "amostra-linha " + it[0] })); li.appendChild(el("span", { textContent: it[1] })); leg.appendChild(li);
+    });
+  }
+
+  function evolucao() {
+    var c = E.comparar(), h = P.estado.dados.historico;
+    texto("evo-partida", h.base ? P.MESES[P.INICIO.mes - 1].toLowerCase() + "/" + P.INICIO.ano : P.rotuloInicio() + " (será congelado no primeiro registro)");
+    formEvolucao();
+    var t = limpar("evo-tabela"), graf = limpar("evo-grafico"); limpar("evo-legenda");
+    if (!c.pontos.length) {
+      texto("evo-resumo", "Nenhum registro ainda. Registre os saldos de hoje para começar a acompanhar.");
+      return;
+    }
+    var u = c.ultimo, resumo;
+    if (u.plano === null) resumo = "Em " + dataBr(u.data) + " você tinha " + moeda(u.real) + ".";
+    else if (Math.abs(u.pct) < 0.005) resumo = "Em " + dataBr(u.data) + " você tinha " + moeda(u.real) + ": exatamente no plano.";
+    else resumo = "Em " + dataBr(u.data) + " você tinha " + moeda(u.real) + ", " + moeda(Math.abs(u.diferenca)) + " (" + pctSinal(u.pct) + ") " + (u.diferenca > 0 ? "acima" : "abaixo") + " dos " + moeda(u.plano) + " que o plano projetava.";
+    texto("evo-resumo", (u.diferenca < 0 ? "⚠ " : "✓ ") + resumo);
+    graficoEvolucao(c, E.projecao());
+
+    var cab = el("tr");
+    ["Data", "Corretora", "Previdência", "Total real", "Plano", "Diferença", ""].forEach(function (x) { cab.appendChild(el("th", { textContent: x, scope: "col" })); });
+    t.appendChild(el("thead")).appendChild(cab);
+    var corpo = el("tbody");
+    c.pontos.slice().reverse().forEach(function (p) {
+      var tr = el("tr");
+      tr.appendChild(el("th", { scope: "row", textContent: dataBr(p.data) }));
+      [p.xp, p.prev, p.real].forEach(function (v) { tr.appendChild(el("td", { textContent: moeda(v) })); });
+      tr.appendChild(el("td", { textContent: p.plano === null ? "–" : moeda(p.plano) }));
+      var td = el("td", { textContent: p.diferenca === null ? "–" : (p.diferenca < 0 ? "− " : "+ ") + moeda(Math.abs(p.diferenca)) + " (" + pctSinal(p.pct) + ")" });
+      if (p.diferenca !== null) td.className = p.diferenca < 0 ? "negativo" : "positivo";
+      tr.appendChild(td);
+      var rm = el("button", { type: "button", className: "remover", textContent: "✕" });
+      rm.setAttribute("aria-label", "Remover o registro de " + dataBr(p.data)); rm.title = "Remover";
+      rm.addEventListener("click", function () { if (window.confirm("Remover o registro de " + dataBr(p.data) + "?")) { E.remover(p.data); desenhar(); } });
+      var tdr = el("td"); tdr.appendChild(rm); tr.appendChild(tdr);
+      corpo.appendChild(tr);
+    });
+    t.appendChild(corpo);
+  }
+
   // ------------------------------------------------------------ saúde financeira
   var ROTULO_NIVEL = { bom: "✓ Bom", atencao: "! Atenção", alerta: "⚠ Alerta", sem: "– Sem dados", info: "i Informação" };
 
@@ -236,7 +340,7 @@
   function desenhar() {
     P.desenharCabecalho();
     resumo = { base: P.oportunidades.medir(), oportunidades: P.oportunidades.analisar(), conferencia: P.conferencia.verificar() };
-    quadros(); passos(); saude(); desenharMeses(); simular(); oportunidades(); atencao(); atalhos();
+    quadros(); passos(); saude(); evolucao(); desenharMeses(); simular(); oportunidades(); atencao(); atalhos();
   }
 
   document.getElementById("ano-ant").addEventListener("click", function () { sel.ano--; desenharMeses(); });

@@ -107,6 +107,10 @@ window.Plano = (function () {
     if (salvo.carteira === undefined) salvo.carteira = null;
     if (!salvo.conferidas || typeof salvo.conferidas !== "object" || Array.isArray(salvo.conferidas)) salvo.conferidas = {};
     if (!salvo.realizados || typeof salvo.realizados !== "object" || Array.isArray(salvo.realizados)) salvo.realizados = {};
+    if (!salvo.historico || typeof salvo.historico !== "object" || Array.isArray(salvo.historico)) salvo.historico = { base: null, fotos: [] };
+    if (!Array.isArray(salvo.historico.fotos)) salvo.historico.fotos = [];
+    if (salvo.historico.base !== null && (typeof salvo.historico.base !== "object" || !isFinite(Number(salvo.historico.base.xp)) || !isFinite(Number(salvo.historico.base.prev)))) salvo.historico.base = null;
+    salvo.historico.fotos = salvo.historico.fotos.filter(function (f) { return f && typeof f.data === "string" && /^\d{4}-\d{2}-\d{2}$/.test(f.data) && isFinite(Number(f.xp)) && isFinite(Number(f.prev)); });
     if (!salvo.contracheques || typeof salvo.contracheques !== "object" || Array.isArray(salvo.contracheques)) salvo.contracheques = {};
     if (!salvo.alocacao || typeof salvo.alocacao !== "object" || Array.isArray(salvo.alocacao)) salvo.alocacao = {};
     ["alvo", "retorno", "mapa"].forEach(function (k) { if (!salvo.alocacao[k] || typeof salvo.alocacao[k] !== "object" || Array.isArray(salvo.alocacao[k])) salvo.alocacao[k] = {}; });

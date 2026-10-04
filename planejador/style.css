@@ -561,3 +561,9 @@ button.remover { min-width: 28px; min-height: 28px; }
 /* ---------- cópia automática no diálogo de backup ---------- */
 .bk-copia { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--borda); }
 .bk-sub { font-size: 1rem; margin-bottom: 4px; }
+
+/* ---------- evolução real × plano (Início) ---------- */
+.evo-form { align-items: flex-end; }
+.evo-form input[type="date"] { font: inherit; color: var(--texto); background: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 10px; min-height: 40px; }
+.evo-form input[type="date"]:focus-visible { outline: 3px solid var(--azul); outline-offset: 1px; }
+.evo-form button { min-height: 40px; }
