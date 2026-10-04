@@ -557,3 +557,7 @@ button.remover { min-width: 28px; min-height: 28px; }
 .cc-form label { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; font-weight: 600; color: var(--suave); }
 .cc-form select { font: inherit; color: var(--texto); background: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 10px; min-height: 40px; }
 .cc-form select:focus-visible { outline: 3px solid var(--azul); outline-offset: 1px; }
+
+/* ---------- cópia automática no diálogo de backup ---------- */
+.bk-copia { margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--borda); }
+.bk-sub { font-size: 1rem; margin-bottom: 4px; }

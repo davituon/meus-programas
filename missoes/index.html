@@ -51,6 +51,9 @@
     </section>
 
     <p id="msg" class="mensagem" role="status" hidden></p>
+    <div id="aviso-backup" class="mensagem erro" role="status" hidden>
+      <span id="aviso-backup-texto"></span> <button type="button" id="aviso-backup-botao">Baixar backup agora</button>
+    </div>
 
     <section class="cartao" aria-labelledby="t-venda">
       <div class="cartao-topo"><h2 id="t-venda">Vendas</h2><span class="dica">Cada venda já é dividida entre as reservas e a conta</span></div>
@@ -188,10 +191,31 @@
       <p class="nota">O resumo não traz nomes de clientes nem descrições das compras. As reservas da missão ficam de fora, a menos que você marque para incluir; poupança, investimento e meu são seus e nunca entram.</p>
     </section>
 
+    <section class="cartao" aria-labelledby="t-bk">
+      <div class="cartao-topo"><h2 id="t-bk">Backup e cópia automática</h2><span class="dica">Seus dados ficam só neste navegador</span></div>
+      <p class="nota">Se você limpar os dados do navegador, tudo some. Guarde uma cópia: baixe o arquivo (ou envie pelo celular) de vez em quando, ou ligue a cópia automática no computador. O arquivo tem nomes e valores: guarde em lugar seguro.</p>
+      <p id="bk-status" class="nota" role="status"></p>
+      <div class="formulario">
+        <button type="button" id="bk-baixar">Baixar backup</button>
+        <button type="button" id="bk-enviar" hidden>Enviar backup…</button>
+      </div>
+      <div id="bk-copia" hidden>
+        <h3 class="mi-subtitulo">Cópia automática em arquivo (computador)</h3>
+        <p class="nota">Escolha um arquivo (por exemplo, dentro da pasta do OneDrive) e ele é atualizado sozinho a cada alteração. Funciona no Chrome e no Edge. Serve como backup e pode ser restaurado em "Restaurar backup".</p>
+        <p id="bk-copia-texto" class="nota" role="status"></p>
+        <div class="formulario">
+          <button type="button" id="bk-copia-escolher">Escolher o arquivo…</button>
+          <button type="button" id="bk-copia-reativar" hidden>Reativar</button>
+          <button type="button" id="bk-copia-desligar" class="secundario" hidden>Desligar</button>
+        </div>
+      </div>
+    </section>
+
     <p class="aviso">Os dados ficam só neste navegador (nada é enviado a lugar nenhum). Baixe um backup de vez em quando. O programa não consulta o banco: os saldos dos porquinhos e da conta são informados por você.</p>
   </main>
 
   <script src="calculo.js"></script>
+  <script src="copia-automatica.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

@@ -12,7 +12,14 @@
 
   function lerOculto() { try { return localStorage.getItem(CHAVE_OCULTO) === "1"; } catch (e) { return false; } }
   function carregar() { try { return M.normalizar(JSON.parse(localStorage.getItem(CHAVE))); } catch (e) { return M.vazio(); } }
-  function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(dados)); } catch (e) { aviso("Não foi possível salvar neste navegador. Baixe um backup.", true); } }
+  var CHAVE_BACKUP = "missoes.backup.v1", DIAS_BACKUP = 14;
+  function ultimoBackup() { try { var v = Number(localStorage.getItem(CHAVE_BACKUP)); return v > 0 ? v : null; } catch (e) { return null; } }
+  function registrarBackup() { try { localStorage.setItem(CHAVE_BACKUP, String(Date.now())); } catch (e) { /* sem armazenamento */ } }
+  function backupAtrasado() { var u = ultimoBackup(); return u === null || Date.now() - u > DIAS_BACKUP * 86400000; }
+  function conteudoBackup() { return JSON.stringify({ app: "fundo-missoes", versao: 4, geradoEm: new Date().toISOString(), dados: dados }, null, 2); }
+  var copia = window.CopiaAutomatica ? window.CopiaAutomatica.criar({ chave: "missoes", nomeArquivo: "fundo-missoes-copia-automatica.json", obterTexto: conteudoBackup, aoGravar: function () { registrarBackup(); } }) : null;
+
+  function salvar() { if (copia) copia.agendar(); try { localStorage.setItem(CHAVE, JSON.stringify(dados)); } catch (e) { aviso("Não foi possível salvar neste navegador. Baixe um backup.", true); } }
 
   function moeda(n) { return oculto ? MASCARA : reais.format(n); }
   function nome(t) { return oculto ? NOME_OCULTO : t; }
@@ -67,8 +74,27 @@
     lista.forEach(function (o) { sel.appendChild(el("option", { value: o[0], textContent: o[1], selected: o[0] === atual })); });
   }
 
+  function avisoDeBackup() {
+    var u = ultimoBackup(), atrasado = backupAtrasado(), caixa = document.getElementById("aviso-backup");
+    caixa.hidden = !atrasado;
+    if (atrasado) texto("aviso-backup-texto", u === null ? "Você ainda não baixou nenhum backup. Os dados ficam só neste navegador." : "Faz " + Math.floor((Date.now() - u) / 86400000) + " dias que você não baixa um backup.");
+    texto("bk-status", u === null ? "Nenhum backup baixado neste navegador ainda." : "Último backup em " + new Date(u).toLocaleString("pt-BR") + ".");
+    if (copia && copia.suportado()) {
+      document.getElementById("bk-copia").hidden = false;
+      copia.estado().then(function (e) {
+        document.getElementById("bk-copia-escolher").textContent = e.estado === "desligada" ? "Escolher o arquivo…" : "Trocar o arquivo…";
+        document.getElementById("bk-copia-reativar").hidden = e.estado !== "precisa-permissao";
+        document.getElementById("bk-copia-desligar").hidden = e.estado === "desligada";
+        var t = e.estado === "ativa" ? "✓ Ligada: gravando em \"" + e.nome + "\"" + (e.ultimaGravacao ? " (última gravação às " + new Date(e.ultimaGravacao).toLocaleTimeString("pt-BR") + ")" : "") + "."
+          : e.estado === "precisa-permissao" ? "! O navegador pediu a permissão de novo para gravar em \"" + e.nome + "\". Clique em Reativar." : "Desligada.";
+        texto("bk-copia-texto", t + (e.erro ? " Último erro: " + e.erro + "." : ""));
+      });
+    }
+  }
+
   function desenhar() {
     document.body.classList.toggle("oculto", oculto);
+    avisoDeBackup();
     var b = document.getElementById("btn-ocultar");
     b.textContent = oculto ? "Mostrar valores" : "Ocultar valores";
     b.setAttribute("aria-pressed", oculto ? "true" : "false");
@@ -333,13 +359,43 @@
     desenhar();
   });
 
-  document.getElementById("btn-baixar").addEventListener("click", function () {
-    var conteudo = JSON.stringify({ app: "fundo-missoes", versao: 2, geradoEm: new Date().toISOString(), dados: dados }, null, 2);
-    var url = URL.createObjectURL(new Blob([conteudo], { type: "application/json" })), a = el("a", { href: url, download: "fundo-missoes-backup-" + M.hoje() + ".json" });
+  function baixarBackup() {
+    var url = URL.createObjectURL(new Blob([conteudoBackup()], { type: "application/json" })), a = el("a", { href: url, download: "fundo-missoes-backup-" + M.hoje() + ".json" });
     document.body.appendChild(a); a.click(); a.remove();
     setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+    registrarBackup(); avisoDeBackup();
     aviso("Backup baixado. Guarde o arquivo em local seguro: ele contém nomes e valores.", false);
+  }
+  document.getElementById("btn-baixar").addEventListener("click", baixarBackup);
+  document.getElementById("bk-baixar").addEventListener("click", baixarBackup);
+  document.getElementById("aviso-backup-botao").addEventListener("click", baixarBackup);
+
+  // enviar pelo compartilhamento do aparelho (celular)
+  var arquivoTeste = typeof File === "function" ? new File(["{}"], "teste.json", { type: "application/json" }) : null;
+  if (arquivoTeste && window.CopiaAutomatica && window.CopiaAutomatica.podeCompartilhar(arquivoTeste)) document.getElementById("bk-enviar").hidden = false;
+  document.getElementById("bk-enviar").addEventListener("click", function () {
+    var arquivo = new File([conteudoBackup()], "fundo-missoes-backup-" + M.hoje() + ".json", { type: "application/json" });
+    navigator.share({ files: [arquivo], title: "Backup do Fundo de Missões" }).then(function () {
+      registrarBackup(); avisoDeBackup(); aviso("Backup enviado. Guarde em lugar seguro e apague das conversas depois.", false);
+    }, function (e) { if (!e || e.name !== "AbortError") aviso("Não consegui compartilhar: " + ((e && e.message) || "erro"), true); });
   });
+
+  // cópia automática em arquivo (computador)
+  if (copia) {
+    document.getElementById("bk-copia-escolher").addEventListener("click", function () {
+      copia.escolherArquivo().then(function (r) {
+        if (r.ok) aviso("Cópia automática ligada. O arquivo é atualizado a cada alteração.", false);
+        else if (!r.cancelado) aviso("Não consegui ligar a cópia automática: " + r.erro, true);
+        avisoDeBackup();
+      });
+    });
+    document.getElementById("bk-copia-reativar").addEventListener("click", function () {
+      copia.reativar().then(function (r) { aviso(r.ok ? "Cópia automática reativada." : "Não foi possível reativar: " + r.erro, !r.ok); avisoDeBackup(); });
+    });
+    document.getElementById("bk-copia-desligar").addEventListener("click", function () {
+      copia.desligar().then(function () { aviso("Cópia automática desligada. O arquivo já gravado continua no computador.", false); avisoDeBackup(); });
+    });
+  }
 
   document.getElementById("arq-backup").addEventListener("change", function (ev) {
     var arquivo = ev.target.files && ev.target.files[0];

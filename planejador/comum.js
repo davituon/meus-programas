@@ -144,8 +144,13 @@ window.Plano = (function () {
   /** Cópia dos valores de partida, já no mesmo formato dos dados que passam pelo carregamento. */
   function dadosPadrao() { return migrar(copiar(EXEMPLO)); }
 
+  var ganchosSalvar = [];
+  /** Registra uma função chamada depois de cada salvamento (usada pela cópia automática em arquivo). */
+  function aoSalvar(fn) { ganchosSalvar.push(fn); }
+
   function salvar() {
     try { localStorage.setItem(CHAVE, JSON.stringify(estado.dados)); } catch (e) { /* sem armazenamento: segue sem salvar */ }
+    ganchosSalvar.forEach(function (fn) { try { fn(); } catch (e) { /* a cópia automática nunca atrapalha o uso */ } });
   }
 
   estado.dados = carregar();
@@ -505,17 +510,45 @@ window.Plano = (function () {
     var restaurar = el("label", { className: "btn-arquivo secundario-arq", textContent: "Restaurar de um arquivo…" });
     restaurar.setAttribute("for", "bk-arquivo");
     var fechar = el("button", { type: "button", className: "secundario", textContent: "Fechar" });
+    var compartilhar = el("button", { type: "button", id: "bk-compartilhar", textContent: "Enviar backup…", hidden: true });
     var acoes = el("div", { className: "bk-acoes" });
-    acoes.append(baixar, restaurar, arq, fechar);
-    dlg.append(status, acoes, msg);
+    acoes.append(baixar, compartilhar, restaurar, arq, fechar);
+
+    // cópia automática em arquivo (Chrome e Edge no computador)
+    var copia = window.CopiaAutomatica ? window.CopiaAutomatica.criar({
+      chave: "planejador", nomeArquivo: "planejador-copia-automatica.json",
+      obterTexto: function () { return JSON.stringify(montarBackup(), null, 2); },
+      aoGravar: function () { registrarBackupFeito(); }
+    }) : null;
+    var copiaCaixa = el("div", { className: "bk-copia", hidden: true });
+    var copiaTexto = el("p", { id: "bk-copia-texto" });
+    var copiaEscolher = el("button", { type: "button", id: "bk-copia-escolher", textContent: "Escolher o arquivo…" });
+    var copiaReativar = el("button", { type: "button", id: "bk-copia-reativar", textContent: "Reativar", hidden: true });
+    var copiaDesligar = el("button", { type: "button", id: "bk-copia-desligar", className: "secundario", textContent: "Desligar", hidden: true });
+    copiaCaixa.append(el("h3", { className: "bk-sub", textContent: "Cópia automática em arquivo" }),
+      el("p", { className: "bk-aviso", textContent: "Escolha um arquivo (por exemplo, dentro da pasta do OneDrive) e ele é atualizado sozinho a cada alteração. Serve como backup e pode ser restaurado aqui." }),
+      copiaTexto, el("div", { className: "bk-acoes" }));
+    copiaCaixa.lastChild.append(copiaEscolher, copiaReativar, copiaDesligar);
+    dlg.append(status, acoes, copiaCaixa, msg);
     document.body.appendChild(dlg);
+    if (copia && copia.suportado()) { copiaCaixa.hidden = false; aoSalvar(copia.agendar); }
 
     function atualizarStatus() {
       var u = ultimoBackup();
       status.textContent = u === null ? "Você ainda não baixou nenhum backup neste navegador." : "Último backup baixado em " + new Date(u).toLocaleString("pt-BR") + ".";
-      botao.classList.toggle("atencao", backupAtrasado());
-      botao.title = backupAtrasado() ? "Faz tempo (ou nunca) que você não baixa um backup" : "Backup e restauração dos dados";
+      botao.classList.toggle("atencao", backupAtrasado() || copiaPrecisaPermissao);
+      botao.title = copiaPrecisaPermissao ? "A cópia automática precisa ser reativada" : backupAtrasado() ? "Faz tempo (ou nunca) que você não baixa um backup" : "Backup e restauração dos dados";
+      if (copia && copia.suportado()) copia.estado().then(function (e) {
+        copiaPrecisaPermissao = e.estado === "precisa-permissao";
+        copiaEscolher.textContent = e.estado === "desligada" ? "Escolher o arquivo…" : "Trocar o arquivo…";
+        copiaReativar.hidden = e.estado !== "precisa-permissao"; copiaDesligar.hidden = e.estado === "desligada";
+        copiaTexto.textContent = e.estado === "ativa" ? "✓ Ligada: gravando em \"" + e.nome + "\"" + (e.ultimaGravacao ? " (última gravação às " + new Date(e.ultimaGravacao).toLocaleTimeString("pt-BR") + ")" : "") + "."
+          : e.estado === "precisa-permissao" ? "! O navegador pediu a permissão de novo para gravar em \"" + e.nome + "\". Clique em Reativar." : "Desligada.";
+        if (e.erro) copiaTexto.textContent += " Último erro: " + e.erro + ".";
+        botao.classList.toggle("atencao", backupAtrasado() || copiaPrecisaPermissao);
+      });
     }
+    var copiaPrecisaPermissao = false;
     function mensagem(t, erro) { msg.textContent = t; msg.className = "bk-msg" + (erro ? " erro" : ""); }
     function abrir() { mensagem(""); atualizarStatus(); if (typeof dlg.showModal === "function") dlg.showModal(); else dlg.setAttribute("open", ""); }
 
@@ -542,6 +575,25 @@ window.Plano = (function () {
       }).catch(function (e) { mensagem("Não consegui restaurar: " + (e && e.message ? e.message : "arquivo inválido"), true); })
         .then(function () { arq.value = ""; });
     });
+    var arquivoTeste = typeof File === "function" ? new File(["{}"], "teste.json", { type: "application/json" }) : null;
+    if (arquivoTeste && window.CopiaAutomatica && window.CopiaAutomatica.podeCompartilhar(arquivoTeste)) compartilhar.hidden = false;
+    compartilhar.addEventListener("click", function () {
+      var b = montarBackup(), arquivo = new File([JSON.stringify(b, null, 2)], "planejador-backup-" + b.geradoEm.slice(0, 10) + ".json", { type: "application/json" });
+      navigator.share({ files: [arquivo], title: "Backup do planejador" }).then(function () {
+        registrarBackupFeito(); atualizarStatus(); mensagem("Backup enviado. Guarde-o em um lugar seguro e apague das conversas depois.", false);
+      }, function (e) { if (!e || e.name !== "AbortError") mensagem("Não consegui compartilhar: " + ((e && e.message) || "erro"), true); });
+    });
+    copiaEscolher.addEventListener("click", function () {
+      copia.escolherArquivo().then(function (r) {
+        if (r.ok) { mensagem("Cópia automática ligada. O arquivo é atualizado a cada alteração.", false); }
+        else if (!r.cancelado) mensagem("Não consegui ligar a cópia automática: " + r.erro, true);
+        atualizarStatus();
+      });
+    });
+    copiaReativar.addEventListener("click", function () {
+      copia.reativar().then(function (r) { mensagem(r.ok ? "Cópia automática reativada." : "Não foi possível reativar: " + r.erro, !r.ok); atualizarStatus(); });
+    });
+    copiaDesligar.addEventListener("click", function () { copia.desligar().then(function () { mensagem("Cópia automática desligada. O arquivo já gravado continua no seu computador.", false); atualizarStatus(); }); });
     atualizarStatus();
   }
 
@@ -566,7 +618,7 @@ window.Plano = (function () {
     indiceDe: indiceDe, pctDe: pctDe, ativo: ativo, taxaDoItem: taxaDoItem, fator: fator, somaMes: somaMes, pctReservas: pctReservas,
     custosDaCota: custosDaCota, patrimonioAtual: patrimonioAtual, NOMES_TIPO_BEM: NOMES_TIPO_BEM, calcMes: calcMes, parcelaDaCompra: parcelaDaCompra, valorNaFatura: valorNaFatura, parcelasRestantes: parcelasRestantes, faturaDoMes: faturaDoMes, taxaMensal: taxaMensal, serieAportes: serieAportes, emReais: emReais, linhaDoMes: linhaDoMes,
     montarBackup: montarBackup, lerBackup: lerBackup, restaurarBackup: restaurarBackup, ultimoBackup: ultimoBackup, registrarBackupFeito: registrarBackupFeito, backupAtrasado: backupAtrasado,
-    limpar: limpar, soma: soma,
+    aoSalvar: aoSalvar, limpar: limpar, soma: soma,
     el: el, texto: texto, nomeMes: nomeMes, campoNumero: campoNumero, cabecalhoMeses: cabecalhoMeses, centrarTabela: centrarTabela, desenharCabecalho: desenharCabecalho, iniciarCabecalho: iniciarCabecalho
   };
 })();
