@@ -88,6 +88,16 @@
       <ul id="contas" class="pg-lista"></ul>
     </section>
 
+    <section class="cartao" aria-labelledby="t-gastos">
+      <div class="cartao-topo"><h2 id="t-gastos">Gastos do dia a dia</h2><span class="dica">Do mês analisado · comparados com o orçado de cada linha</span></div>
+      <p class="nota">Lance o que você gasta fora das contas fixas (mercado, combustível, lazer…). Escolha a linha do orçamento e como pagou: no <strong>cartão</strong>, o gasto também entra na fatura do mês (na página Cartão de crédito); em <strong>Pix, débito ou dinheiro</strong>, fica só aqui. Remover o gasto remove a compra do cartão.</p>
+      <div id="gasto-form" class="cc-form evo-form"></div>
+      <p id="gasto-erro" class="lead-menor" role="status"></p>
+      <p id="gasto-resumo" class="lead-menor" role="status"></p>
+      <div class="tabela-rolagem"><table id="gasto-tabela" class="tabela tabela-simples"></table></div>
+      <ul id="gasto-lista" class="mi-lista"></ul>
+    </section>
+
     <section class="cartao" aria-labelledby="t-hist">
       <div class="cartao-topo"><h2 id="t-hist">Orçado × realizado, mês a mês</h2><span class="dica">Até o mês analisado · últimos 12 meses</span></div>
       <p class="nota">"Previsto" é tudo o que vence no mês. "Pago" é o que você marcou como pago, com o valor realmente pago (quando você informa um valor diferente). "Desvio" compara o realmente pago com o previsto só das contas pagas: valores positivos são gasto acima do previsto.</p>
@@ -106,6 +116,7 @@
   <script src="exemplo-publico.js"></script>
   <script src="comum.js"></script>
   <script src="calculo-pagamentos.js"></script>
+  <script src="calculo-gastos.js"></script>
   <script src="pagamentos.js"></script>
 </body>
 </html>

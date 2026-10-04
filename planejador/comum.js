@@ -107,6 +107,8 @@ window.Plano = (function () {
     if (salvo.carteira === undefined) salvo.carteira = null;
     if (!salvo.conferidas || typeof salvo.conferidas !== "object" || Array.isArray(salvo.conferidas)) salvo.conferidas = {};
     if (!salvo.realizados || typeof salvo.realizados !== "object" || Array.isArray(salvo.realizados)) salvo.realizados = {};
+    if (!Array.isArray(salvo.gastos)) salvo.gastos = [];
+    salvo.gastos = salvo.gastos.filter(function (g) { return g && typeof g === "object" && typeof g.id === "string" && typeof g.data === "string" && isFinite(Number(g.valor)) && Number(g.valor) > 0; });
     if (!salvo.historico || typeof salvo.historico !== "object" || Array.isArray(salvo.historico)) salvo.historico = { base: null, fotos: [] };
     if (!Array.isArray(salvo.historico.fotos)) salvo.historico.fotos = [];
     if (salvo.historico.base !== null && (typeof salvo.historico.base !== "object" || !isFinite(Number(salvo.historico.base.xp)) || !isFinite(Number(salvo.historico.base.prev)))) salvo.historico.base = null;

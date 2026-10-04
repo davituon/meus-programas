@@ -85,8 +85,83 @@
     Array.prototype.forEach.call(document.querySelectorAll(".pg-filtros button"), function (b) { b.setAttribute("aria-pressed", b.getAttribute("data-filtro") === filtro ? "true" : "false"); });
     var ul = limpar("contas"), vis = todas.filter(function (c) { return filtro === "todas" || (filtro === "pagas" ? !!c.pago : !c.pago); });
     vis.forEach(function (c) { ul.appendChild(linha(c)); });
+    gastos();
     historico();
     if (!vis.length) ul.appendChild(el("li", { className: "vazio", textContent: !todas.length ? "Nenhuma conta neste mês." : filtro === "pagas" ? "Nenhuma conta paga ainda." : "Nenhuma conta pendente." }));
+  }
+
+  // ---------------------------------------------------------------- gastos do dia a dia
+  var G = P.gastos, lembrar = { linha: "outros", via: "avulso" };
+  var SITUACAO = { dentro: "✓ dentro do orçado", perto: "! perto do limite", estourou: "⚠ estourou" };
+
+  function dataPadrao() {
+    var r = ref(), hojeIso = P.pagamentos.hoje();
+    return hojeIso.slice(0, 7) === P.pagamentos.chaveMes(r.ano, r.mes) ? hojeIso : P.pagamentos.chaveMes(r.ano, r.mes) + "-01";
+  }
+
+  function gastos() {
+    var r = ref(), caixa = limpar("gasto-form"), d = P.estado.dados, linhas = G.linhasDoMes(r.ano, r.mes);
+    var rot = function (t, filho) { var l = el("label"); l.appendChild(document.createTextNode(t)); l.appendChild(filho); return l; };
+    var data = el("input", { type: "date", value: dataPadrao() });
+    var valor = el("input", { type: "text", className: "mini", inputMode: "decimal", placeholder: "0,00" });
+    valor.setAttribute("aria-label", "Valor do gasto");
+    var linha = el("select", { className: "mini" });
+    linha.setAttribute("aria-label", "Linha do orçamento");
+    linhas.forEach(function (l) { linha.appendChild(el("option", { value: l.chave, textContent: l.nome, selected: l.chave === lembrar.linha })); });
+    linha.appendChild(el("option", { value: "outros", textContent: "Outros (sem linha)", selected: lembrar.linha === "outros" }));
+    var via = el("select", { className: "mini" });
+    via.setAttribute("aria-label", "Como foi pago");
+    via.appendChild(el("option", { value: "avulso", textContent: "Pix, débito ou dinheiro", selected: lembrar.via === "avulso" }));
+    d.cartao.cartoes.forEach(function (c) { via.appendChild(el("option", { value: c.id, textContent: "Cartão: " + c.nome, selected: c.id === lembrar.via })); });
+    var nota = el("input", { type: "text", className: "mini", maxLength: 60, placeholder: "opcional" });
+    nota.setAttribute("aria-label", "Observação do gasto");
+    var ok = el("button", { type: "button", id: "gasto-lancar", textContent: "Lançar gasto" });
+    ok.addEventListener("click", function () {
+      lembrar.linha = linha.value; lembrar.via = via.value;
+      var erro = G.lancar({ data: data.value, valor: valor.value, linha: linha.value, via: via.value, nota: nota.value });
+      if (erro) { texto("gasto-erro", erro); return; }
+      desenhar();
+    });
+    caixa.append(rot("Data", data), rot("Valor (R$)", valor), rot("Linha do orçamento", linha), rot("Pago com", via), rot("Observação", nota), ok);
+    texto("gasto-erro", "");
+
+    var c = G.comparar(r.ano, r.mes), tab = limpar("gasto-tabela"), lista = limpar("gasto-lista");
+    if (!c.qtd) { texto("gasto-resumo", "Nenhum gasto lançado em " + P.MESES_LONGOS[r.mes - 1].toLowerCase() + ". Lance o primeiro acima."); return; }
+    texto("gasto-resumo", "Em " + P.MESES_LONGOS[r.mes - 1].toLowerCase() + ": " + moeda(c.total) + " em " + c.qtd + (c.qtd === 1 ? " gasto" : " gastos") + (c.noCartao > 0 ? " (" + moeda(c.noCartao) + " no cartão)" : "") + (c.estouros ? ". ⚠ " + c.estouros + (c.estouros === 1 ? " linha estourou" : " linhas estouraram") + " o orçado." : ". Nenhuma linha estourou."));
+    var cab = el("tr");
+    ["Linha", "Orçado", "Gasto", "% do orçado", "Saldo", "Situação"].forEach(function (h) { cab.appendChild(el("th", { textContent: h, scope: "col" })); });
+    tab.appendChild(el("thead")).appendChild(cab);
+    var corpo = el("tbody");
+    c.itens.forEach(function (i) {
+      var tr = el("tr", { className: i.situacao === "estourou" ? "alerta-linha" : "" });
+      tr.appendChild(el("th", { scope: "row", textContent: i.nome }));
+      tr.appendChild(el("td", { textContent: moeda(i.orcado) }));
+      tr.appendChild(el("td", { textContent: moeda(i.gasto) }));
+      tr.appendChild(el("td", { textContent: Math.round(i.pct * 100) + "%" }));
+      tr.appendChild(el("td", { textContent: (i.saldo < 0 ? "− " : "") + moeda(Math.abs(i.saldo)) }));
+      tr.appendChild(el("td", { textContent: SITUACAO[i.situacao] }));
+      corpo.appendChild(tr);
+    });
+    if (c.outros > 0) {
+      var tro = el("tr"); tro.appendChild(el("th", { scope: "row", textContent: "Outros (sem linha)" }));
+      tro.appendChild(el("td", { textContent: "–" })); tro.appendChild(el("td", { textContent: moeda(c.outros) })); tro.appendChild(el("td", { textContent: "–" })); tro.appendChild(el("td", { textContent: "–" })); tro.appendChild(el("td", { textContent: "–" }));
+      corpo.appendChild(tro);
+    }
+    tab.appendChild(corpo);
+
+    var nomes = {}; G.linhasDoMes(r.ano, r.mes).forEach(function (l) { nomes[l.chave] = l.nome; });
+    var cartoes = {}; d.cartao.cartoes.forEach(function (k) { cartoes[k.id] = k.nome; });
+    G.doMes(r.ano, r.mes).forEach(function (g) {
+      var li = el("li", { className: "mi-item" });
+      li.appendChild(el("span", { className: "mi-data", textContent: dataBr(g.data) }));
+      li.appendChild(el("span", { textContent: (nomes[g.linha] || "Outros") + (g.nota ? " · " + (P.estado.oculto ? "••••" : g.nota) : "") + " · " + (g.via === "avulso" ? "Pix, débito ou dinheiro" : "cartão " + (cartoes[g.via] || "")) }));
+      li.appendChild(el("b", { className: "mi-valor", textContent: moeda(g.valor) }));
+      var rm = el("button", { type: "button", className: "remover", textContent: "✕" });
+      rm.setAttribute("aria-label", "Remover o gasto de " + dataBr(g.data)); rm.title = "Remover";
+      rm.addEventListener("click", function () { if (window.confirm("Remover este gasto" + (g.via === "avulso" ? "" : " e a compra correspondente no cartão") + "?")) { G.remover(g.id); desenhar(); } });
+      li.appendChild(rm);
+      lista.appendChild(li);
+    });
   }
 
   function historico() {
