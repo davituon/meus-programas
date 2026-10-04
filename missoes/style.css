@@ -546,3 +546,14 @@ button.remover { min-width: 28px; min-height: 28px; }
 .passo button { padding: 4px 12px; font-size: .85rem; min-height: 32px; }
 .passo-mais { padding: 8px 0; color: var(--suave); font-size: .88rem; }
 @media (max-width: 640px) { .passo { grid-template-columns: 22px minmax(0, 1fr); } .passo > a, .passo > button { grid-column: 2; justify-self: start; } }
+
+/* ---------- conferir com o contracheque / detalhes recolhíveis ---------- */
+.corrigir-classes { margin-top: 14px; }
+.corrigir-classes summary { cursor: pointer; font-weight: 600; padding: 6px 0; }
+.corrigir-classes summary:focus-visible { outline: 3px solid var(--azul); outline-offset: 2px; border-radius: 4px; }
+.cc-grupo th { text-align: left; background: var(--campo); font-size: .8rem; text-transform: uppercase; letter-spacing: .4px; color: var(--suave); }
+#cc-resumo td input, #cc-itens td input { width: 130px; text-align: right; }
+.cc-form { display: flex; flex-wrap: wrap; gap: 10px 14px; margin: 10px 0; }
+.cc-form label { display: flex; flex-direction: column; gap: 3px; font-size: .82rem; font-weight: 600; color: var(--suave); }
+.cc-form select { font: inherit; color: var(--texto); background: var(--campo); border: 1px solid var(--borda); border-radius: 8px; padding: 6px 10px; min-height: 40px; }
+.cc-form select:focus-visible { outline: 3px solid var(--azul); outline-offset: 1px; }

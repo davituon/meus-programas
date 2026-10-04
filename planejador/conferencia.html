@@ -84,6 +84,23 @@
       <ul id="diagnostico" class="composicao"></ul>
     </section>
 
+    <section class="cartao" aria-labelledby="t-cc">
+      <div class="cartao-topo"><h2 id="t-cc">Conferir com o contracheque</h2><span class="dica">A prova mais direta de que o plano está certo</span></div>
+      <p class="nota">Escolha um mês, digite o que veio no contracheque e veja onde o plano difere. Compara com os valores daquele mês (com o reajuste), e não com "reais de hoje". Horas extras, sobreaviso e imposto de renda mudam todo mês, então pequenas diferenças são normais; o que importa é achar itens faltando ou com valor muito diferente. O que você digita fica salvo neste navegador.</p>
+      <div class="cc-form">
+        <label>Mês<select id="cc-mes"></select></label>
+        <label>Ano<select id="cc-ano"></select></label>
+      </div>
+      <p id="cc-veredito" class="lead-menor" role="status"></p>
+      <div class="tabela-rolagem"><table id="cc-resumo" class="tabela tabela-simples"></table></div>
+      <p id="cc-detalhes" class="nota" role="status"></p>
+      <details class="corrigir-classes" id="cc-itens-caixa">
+        <summary>Comparar item a item (para achar o que está diferente)</summary>
+        <p class="nota">Digite o valor de cada linha do contracheque que tiver no plano. Deixe em branco o que não conferir.</p>
+        <div class="tabela-rolagem"><table id="cc-itens" class="tabela tabela-simples"></table></div>
+      </details>
+    </section>
+
     <p class="aviso">Conferência automática e limitada: ela só enxerga o que está no programa. Organização pessoal, não é auditoria nem recomendação de investimento.</p>
   </main>
 
@@ -91,6 +108,7 @@
   <script src="comum.js"></script>
   <script src="calculo-aposentadoria.js"></script>
   <script src="calculo-conferencia.js"></script>
+  <script src="calculo-contracheque.js"></script>
   <script src="conferencia.js"></script>
 </body>
 </html>
